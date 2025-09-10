@@ -21,17 +21,32 @@ service StakeholdersService {
     };
   }
 
-   // RPC za dobijanje svih korisnika
+  // RPC za dobijanje svih korisnika
   rpc GetAllUsers (GetAllUsersRequest) returns (GetAllUsersResponse) {
     option (google.api.http) = {
-      get: "/users/all"
+      get: "/admin/users/all"
+    };
+  }
+
+  // RPC za blokiranje korisnika
+  rpc BlockUser (BlockUserRequest) returns (BlockUserResponse) {
+    option (google.api.http) = {
+      patch: "/admin/users/block/{id}"
+      body: "*"
+    };
+  }
+
+  // RPC za deblokiranje korisnika
+  rpc UnblockUser (UnblockUserRequest) returns (UnblockUserResponse) {
+    option (google.api.http) = {
+      patch: "/admin/users/unblock/{id}"
+      body: "*"
     };
   }
 }
 
+// ----------------- Poruke -----------------
 
-
-// Poruka za registraciju korisnika
 message RegistrationRequest {
   string username = 1;
   string password = 2;
@@ -39,30 +54,41 @@ message RegistrationRequest {
   string role     = 4;
 }
 
-// Poruka za login korisnika
 message LoginRequest {
   string username = 1;
   string password = 2;
 }
 
-// Odgovor za autentifikaciju (token)
 message AuthenticationResponse {
   string accessToken = 1;
 }
 
-
-// Poruka za zahtev za sve korisnike (može biti prazna)
 message GetAllUsersRequest {}
 
-// Poruka koja predstavlja jednog korisnika
 message User {
   string id       = 1;
   string username = 2;
   string email    = 3;
   string role     = 4;
+  bool isBlocked    = 5; // dodato polje da frontend zna da li je blokiran
 }
 
-// Poruka za odgovor sa listom korisnika
 message GetAllUsersResponse {
   repeated User users = 1;
+}
+
+// Blokiranje korisnika
+message BlockUserRequest {
+  string id = 1; // id korisnika koji se blokira
+}
+message BlockUserResponse {
+  string message = 1;
+}
+
+// Deblokiranje korisnika
+message UnblockUserRequest {
+  string id = 1; // id korisnika koji se deblokira
+}
+message UnblockUserResponse {
+  string message = 1;
 }

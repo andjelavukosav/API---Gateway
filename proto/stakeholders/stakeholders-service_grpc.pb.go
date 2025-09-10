@@ -22,6 +22,8 @@ const (
 	StakeholdersService_RegisterUser_FullMethodName = "/StakeholdersService/RegisterUser"
 	StakeholdersService_LoginUser_FullMethodName    = "/StakeholdersService/LoginUser"
 	StakeholdersService_GetAllUsers_FullMethodName  = "/StakeholdersService/GetAllUsers"
+	StakeholdersService_BlockUser_FullMethodName    = "/StakeholdersService/BlockUser"
+	StakeholdersService_UnblockUser_FullMethodName  = "/StakeholdersService/UnblockUser"
 )
 
 // StakeholdersServiceClient is the client API for StakeholdersService service.
@@ -34,6 +36,10 @@ type StakeholdersServiceClient interface {
 	LoginUser(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*AuthenticationResponse, error)
 	// RPC za dobijanje svih korisnika
 	GetAllUsers(ctx context.Context, in *GetAllUsersRequest, opts ...grpc.CallOption) (*GetAllUsersResponse, error)
+	// RPC za blokiranje korisnika
+	BlockUser(ctx context.Context, in *BlockUserRequest, opts ...grpc.CallOption) (*BlockUserResponse, error)
+	// RPC za deblokiranje korisnika
+	UnblockUser(ctx context.Context, in *UnblockUserRequest, opts ...grpc.CallOption) (*UnblockUserResponse, error)
 }
 
 type stakeholdersServiceClient struct {
@@ -74,6 +80,26 @@ func (c *stakeholdersServiceClient) GetAllUsers(ctx context.Context, in *GetAllU
 	return out, nil
 }
 
+func (c *stakeholdersServiceClient) BlockUser(ctx context.Context, in *BlockUserRequest, opts ...grpc.CallOption) (*BlockUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(BlockUserResponse)
+	err := c.cc.Invoke(ctx, StakeholdersService_BlockUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *stakeholdersServiceClient) UnblockUser(ctx context.Context, in *UnblockUserRequest, opts ...grpc.CallOption) (*UnblockUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UnblockUserResponse)
+	err := c.cc.Invoke(ctx, StakeholdersService_UnblockUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // StakeholdersServiceServer is the server API for StakeholdersService service.
 // All implementations must embed UnimplementedStakeholdersServiceServer
 // for forward compatibility.
@@ -84,6 +110,10 @@ type StakeholdersServiceServer interface {
 	LoginUser(context.Context, *LoginRequest) (*AuthenticationResponse, error)
 	// RPC za dobijanje svih korisnika
 	GetAllUsers(context.Context, *GetAllUsersRequest) (*GetAllUsersResponse, error)
+	// RPC za blokiranje korisnika
+	BlockUser(context.Context, *BlockUserRequest) (*BlockUserResponse, error)
+	// RPC za deblokiranje korisnika
+	UnblockUser(context.Context, *UnblockUserRequest) (*UnblockUserResponse, error)
 	mustEmbedUnimplementedStakeholdersServiceServer()
 }
 
@@ -102,6 +132,12 @@ func (UnimplementedStakeholdersServiceServer) LoginUser(context.Context, *LoginR
 }
 func (UnimplementedStakeholdersServiceServer) GetAllUsers(context.Context, *GetAllUsersRequest) (*GetAllUsersResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAllUsers not implemented")
+}
+func (UnimplementedStakeholdersServiceServer) BlockUser(context.Context, *BlockUserRequest) (*BlockUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method BlockUser not implemented")
+}
+func (UnimplementedStakeholdersServiceServer) UnblockUser(context.Context, *UnblockUserRequest) (*UnblockUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnblockUser not implemented")
 }
 func (UnimplementedStakeholdersServiceServer) mustEmbedUnimplementedStakeholdersServiceServer() {}
 func (UnimplementedStakeholdersServiceServer) testEmbeddedByValue()                             {}
@@ -178,6 +214,42 @@ func _StakeholdersService_GetAllUsers_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _StakeholdersService_BlockUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BlockUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StakeholdersServiceServer).BlockUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StakeholdersService_BlockUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StakeholdersServiceServer).BlockUser(ctx, req.(*BlockUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _StakeholdersService_UnblockUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnblockUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(StakeholdersServiceServer).UnblockUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: StakeholdersService_UnblockUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(StakeholdersServiceServer).UnblockUser(ctx, req.(*UnblockUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // StakeholdersService_ServiceDesc is the grpc.ServiceDesc for StakeholdersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -196,6 +268,14 @@ var StakeholdersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAllUsers",
 			Handler:    _StakeholdersService_GetAllUsers_Handler,
+		},
+		{
+			MethodName: "BlockUser",
+			Handler:    _StakeholdersService_BlockUser_Handler,
+		},
+		{
+			MethodName: "UnblockUser",
+			Handler:    _StakeholdersService_UnblockUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
