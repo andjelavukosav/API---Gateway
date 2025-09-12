@@ -1,0 +1,92 @@
+syntax = "proto3";
+
+option go_package = "proto/tours";
+
+import "google/api/annotations.proto";
+
+// ----------------- SERVIS -----------------
+service ToursService {
+  // Kreiranje nove ture
+  rpc CreateTour(CreateTourRequest) returns (TourResponse) {
+    option (google.api.http) = {
+      post: "/tours/create-tour"
+      body: "*"
+    };
+  }
+
+  // Preuzimanje svih tura od autora
+  rpc GetAuthorTours(GetAuthorToursRequest) returns (GetAuthorToursResponse) {
+    option (google.api.http) = {
+      get: "/tours/{authorId}"
+    };
+  }
+
+  // Dodavanje ključne tačke na turu
+  rpc AddKeyPoint(AddKeyPointRequest) returns (KeyPointResponse) {
+    option (google.api.http) = {
+      post: "/tours/add-keypoint-grpc"
+      body: "*"
+    };
+  }
+}
+
+// ----------------- PORUKE -----------------
+
+// Tura
+message TourResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  string difficulty = 4;
+  repeated string tags = 5;
+  string status = 6;
+  double price = 7;
+  string authorId = 8;
+  repeated KeyPoint keyPoints = 9;
+}
+
+// Kreiranje ture
+message CreateTourRequest {
+  string name = 1;
+  string description = 2;
+  string difficulty = 3;
+  repeated string tags = 4;
+  string status = 5;
+  double price = 6;
+  string authorId = 7;
+}
+
+// Zahtev za listu tura autora
+message GetAuthorToursRequest {
+  string authorId = 1;
+}
+
+// Odgovor sa listom tura
+message GetAuthorToursResponse {
+  repeated TourResponse tours = 1;
+}
+
+// ----------------- KLJUČNE TAČKE -----------------
+
+message KeyPoint {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double latitude = 4;
+  double longitude = 5;
+  string imageURL = 6; // <- samo URL slike, fajl se ne šalje gRPC-om
+}
+
+message AddKeyPointRequest {
+  string tourId = 1;  // ID ture kojoj se dodaje tačka
+  KeyPoint point = 2; // Detalji tačke
+}
+
+message KeyPointResponse {
+  string id = 1;
+  string name = 2;
+  string description = 3;
+  double latitude = 4;
+  double longitude = 5;
+  string imageURL = 6;
+}
