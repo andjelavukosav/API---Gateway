@@ -2,14 +2,20 @@ package main
 
 import (
 	"context"
-	"example/gateway/config"
-	"example/gateway/proto/stakeholders"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 
+	pb "example/gateway/proto/blog"
+	imagepb "example/gateway/proto/image"
+	"example/gateway/proto/stakeholders"
+	"example/gateway/handlers"
+	"example/gateway/config"
+	"example/gateway/middleware"
+
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -27,27 +33,60 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to dial server:", err)
 	}
+	defer conn.Close()
 
-	gwmux := runtime.NewServeMux()
+	//gwmux := runtime.NewServeMux()
+	
+	//Stakeholders
 	client := stakeholders.NewStakeholdersServiceClient(conn)
-	if err := stakeholders.RegisterStakeholdersServiceHandlerClient(context.Background(), gwmux, client); err != nil {
+	/*if err := stakeholders.RegisterStakeholdersServiceHandlerClient(context.Background(), gwmux, client); err != nil {
+		log.Fatalln("Failed to register gateway:", err)
+	}*/
+
+	//Blog gRPC client
+	blogConn, err := grpc.DialContext(
+		context.Background(),
+		cfg.BlogServiceAddress, 
+		grpc.WithBlock(),
+    	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial BlogService:", err)
+	}
+	defer blogConn.Close()
+
+	// Blog REST preko gRPC client (sve rute osim multipart create)
+	blogClient := pb.NewBlogServiceClient(blogConn)
+	imageClient := imagepb.NewImageServiceClient(blogConn)
+	// ----- gRPC Gateway mux -----
+	gwmux := runtime.NewServeMux()
+	// Registracija Stakeholders servisa
+	if err = stakeholders.RegisterStakeholdersServiceHandlerClient(context.Background(), gwmux, client); err != nil {
 		log.Fatalln("Failed to register gateway:", err)
 	}
+	// Registracija Blog servisa (sve osim multipart create)
+	if err = pb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
+		log.Fatalln("Failed to register BlogService gateway:", err)
+	}
 
-	muxWithCORS := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		gwmux.ServeHTTP(w, r)
-	})
+	// ----- REST handler za multipart POST (create blog) -----
+	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
+	
+	r := mux.NewRouter()
+	r.HandleFunc("/blogs/create-blog", blogHandler.CreateBlogHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
+	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
+	
+	// gRPC Gateway fallback za ostale rute
+	r.PathPrefix("/").Handler(gwmux)
+	
+	// Omotaj router u CORS middleware
+	handler := middleware.CORSMiddleware(r)
 
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
-		Handler: muxWithCORS,
+		Handler: handler,
 	}
 
 	go func() {
@@ -65,3 +104,4 @@ func main() {
 		log.Fatalln("error while stopping server: ", err)
 	}
 }
+
