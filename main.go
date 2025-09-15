@@ -18,6 +18,7 @@ import (
 	pb "example/gateway/proto/tours"
 	"example/gateway/config"
 	"example/gateway/proto/stakeholders"
+	"example/gateway/proto/tours"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
 
