@@ -3,10 +3,6 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"example/gateway/config"
-	"example/gateway/proto/stakeholders"
-	"example/gateway/proto/tours"
-	pb "example/gateway/proto/tours" // Proveri da li je putanja tačna
 	"fmt"
 	"io"
 	"log"
@@ -17,7 +13,17 @@ import (
 	"strconv"
 	"syscall"
 
+	blogpb "example/gateway/proto/blog"
+	imagepb "example/gateway/proto/image"
+	pb "example/gateway/proto/tours"
+	"example/gateway/config"
+	"example/gateway/proto/stakeholders"
+	"example/gateway/proto/tours"
+	"example/gateway/handlers"
+	"example/gateway/middleware"
+
 	"github.com/google/uuid"
+	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -70,35 +76,62 @@ func main() {
 		log.Fatalln("Failed to register Tours gateway:", err)
 	}
 
+	// -------- Blogs gRPC connection --------
+	blogConn, err := grpc.DialContext(
+		context.Background(),
+		cfg.BlogServiceAddress, 
+		grpc.WithBlock(),
+    	grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial BlogService:", err)
+	}
+	defer blogConn.Close()
+
+	// Blog REST preko gRPC client (sve rute osim multipart create)
+	blogClient := blogpb.NewBlogServiceClient(blogConn)
+	imageClient := imagepb.NewImageServiceClient(blogConn)
+	
+	// Registracija Blog servisa (sve osim multipart create)
+	if err = blogpb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
+		log.Fatalln("Failed to register BlogService gateway:", err)
+	}
+
 	// -------- Standardni Go HTTP multiplekser za ručne rute --------
-	mux := http.NewServeMux()
+	//mux := http.NewServeMux()
 
 	// Povezivanje gRPC-Gateway-a sa osnovnim multiplekserom
-	mux.Handle("/", gwmux)
+	//mux.Handle("/", gwmux)
 
 	// Ručno registrovanje rute za upload slike ključne tačke
-	mux.HandleFunc("/tours/add-keypoint", addKeyPointHandler) // Dodaj ovu liniju
+	//mux.HandleFunc("/tours/add-keypoint", addKeyPointHandler) // Dodaj ovu liniju
 
-	// -------- CORS handler --------
-	muxWithCORS := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "http://localhost:4200")
-		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS, PATCH")
-		w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	// ----- REST handler za multipart POST (create blog) -----
+	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
+	
+	r := mux.NewRouter()
+	
+	r.HandleFunc("/tours/add-keypoint", addKeyPointHandler).Methods("POST", "OPTIONS")
+	r.PathPrefix("/uploads/").Handler(http.StripPrefix("/uploads/", http.FileServer(http.Dir("/app/uploads"))))
 
-		if r.Method == "OPTIONS" {
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-		// Sada koristimo novi multiplekser koji sadrži sve rute
-		mux.ServeHTTP(w, r)
-	})
+	r.HandleFunc("/blogs/create-blog", blogHandler.CreateBlogHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
+	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
+	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
 
-	mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("/app/uploads"))))
+	
+	// gRPC Gateway fallback za ostale rute
+	r.PathPrefix("/").Handler(gwmux)
+	
+	// Omotaj router u CORS middleware
+	handler := middleware.CORSMiddleware(r)
+
+	//mux.Handle("/uploads/", http.StripPrefix("/uploads/", http.FileServer(http.Dir("/app/uploads"))))
 
 	// -------- HTTP server --------
 	gwServer := &http.Server{
 		Addr:    cfg.Address,
-		Handler: muxWithCORS,
+		Handler: handler,
 	}
 
 	go func() {

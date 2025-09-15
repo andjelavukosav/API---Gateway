@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+package image;
+
+option go_package = "proto/image";
+
+service ImageService {
+  rpc UploadImage(stream UploadImageRequest) returns (UploadImageResponse);
+  rpc DownloadImage(DownloadImageRequest) returns (stream DownloadImageResponse);
+}
+
+message ImageInfo {
+  string filename = 1;
+  string image_type = 2; // e.g., ".jpg", ".png"
+}
+
+message UploadImageRequest {
+  oneof request_data {
+    ImageInfo info = 1;
+    bytes chunk_data = 2;
+  }
+}
+
+message UploadImageResponse {
+  string image_id = 1;
+  string path = 2; //putanja u uploads/ folderu
+  uint32 size = 3; // Total size of uploaded image
+}
+
+message DownloadImageRequest {
+  string filename = 1;
+}
+
+message DownloadImageResponse {
+  bytes chunk_data = 1;
+  string content_type = 2;
+}
