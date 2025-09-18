@@ -361,8 +361,8 @@ func (x *BlogWithCommentsResponse) GetComments() []*CommentResponse {
 // ================== Comment poruke ==================
 type CreateCommentRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	BlogId        string                 `protobuf:"bytes,1,opt,name=blog_id,json=blogId,proto3" json:"blog_id,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	BlogId        string                 `protobuf:"bytes,1,opt,name=blog_id,json=blogId,proto3" json:"blog_id,omitempty"` // iz path-a
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`             // iz body-ja
 	UserId        string                 `protobuf:"bytes,3,opt,name=user_id,json=userId,proto3" json:"user_id,omitempty"` // iz JWT tokena
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -503,6 +503,58 @@ func (x *CommentResponse) GetUpdatedAt() string {
 	return ""
 }
 
+type UpdateCommentRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`           // path param
+	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"` // body
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *UpdateCommentRequest) Reset() {
+	*x = UpdateCommentRequest{}
+	mi := &file_blog_blog_service_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *UpdateCommentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*UpdateCommentRequest) ProtoMessage() {}
+
+func (x *UpdateCommentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_blog_service_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use UpdateCommentRequest.ProtoReflect.Descriptor instead.
+func (*UpdateCommentRequest) Descriptor() ([]byte, []int) {
+	return file_blog_blog_service_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *UpdateCommentRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *UpdateCommentRequest) GetContent() string {
+	if x != nil {
+		return x.Content
+	}
+	return ""
+}
+
 var File_blog_blog_service_proto protoreflect.FileDescriptor
 
 const file_blog_blog_service_proto_rawDesc = "" +
@@ -542,13 +594,17 @@ const file_blog_blog_service_proto_rawDesc = "" +
 	"\n" +
 	"created_at\x18\x05 \x01(\tR\tcreatedAt\x12\x1d\n" +
 	"\n" +
-	"updated_at\x18\x06 \x01(\tR\tupdatedAt2\xee\x02\n" +
+	"updated_at\x18\x06 \x01(\tR\tupdatedAt\"@\n" +
+	"\x14UpdateCommentRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x18\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent2\xc9\x03\n" +
 	"\vBlogService\x12N\n" +
 	"\n" +
 	"CreateBlog\x12\x12.CreateBlogRequest\x1a\r.BlogResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/blogs/create-blog\x12M\n" +
 	"\fGetUserBlogs\x12\x14.GetUserBlogsRequest\x1a\x12.UserBlogsResponse\"\x13\x82\xd3\xe4\x93\x02\r\x12\v/blogs/user\x12`\n" +
 	"\x0eGetBlogDetails\x12\x16.GetBlogDetailsRequest\x1a\x19.BlogWithCommentsResponse\"\x1b\x82\xd3\xe4\x93\x02\x15\x12\x13/blogs/{id}/details\x12^\n" +
-	"\rCreateComment\x12\x15.CreateCommentRequest\x1a\x10.CommentResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/blogs/{blog_id}/commentsB\fZ\n" +
+	"\rCreateComment\x12\x15.CreateCommentRequest\x1a\x10.CommentResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/blogs/{blog_id}/comments\x12Y\n" +
+	"\rUpdateComment\x12\x15.UpdateCommentRequest\x1a\x10.CommentResponse\"\x1f\x82\xd3\xe4\x93\x02\x19:\x01*\x1a\x14/blogs/comments/{id}B\fZ\n" +
 	"proto/blogb\x06proto3"
 
 var (
@@ -563,7 +619,7 @@ func file_blog_blog_service_proto_rawDescGZIP() []byte {
 	return file_blog_blog_service_proto_rawDescData
 }
 
-var file_blog_blog_service_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_blog_blog_service_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
 var file_blog_blog_service_proto_goTypes = []any{
 	(*CreateBlogRequest)(nil),        // 0: CreateBlogRequest
 	(*BlogResponse)(nil),             // 1: BlogResponse
@@ -573,6 +629,7 @@ var file_blog_blog_service_proto_goTypes = []any{
 	(*BlogWithCommentsResponse)(nil), // 5: BlogWithCommentsResponse
 	(*CreateCommentRequest)(nil),     // 6: CreateCommentRequest
 	(*CommentResponse)(nil),          // 7: CommentResponse
+	(*UpdateCommentRequest)(nil),     // 8: UpdateCommentRequest
 }
 var file_blog_blog_service_proto_depIdxs = []int32{
 	1, // 0: UserBlogsResponse.blogs:type_name -> BlogResponse
@@ -582,12 +639,14 @@ var file_blog_blog_service_proto_depIdxs = []int32{
 	2, // 4: BlogService.GetUserBlogs:input_type -> GetUserBlogsRequest
 	4, // 5: BlogService.GetBlogDetails:input_type -> GetBlogDetailsRequest
 	6, // 6: BlogService.CreateComment:input_type -> CreateCommentRequest
-	1, // 7: BlogService.CreateBlog:output_type -> BlogResponse
-	3, // 8: BlogService.GetUserBlogs:output_type -> UserBlogsResponse
-	5, // 9: BlogService.GetBlogDetails:output_type -> BlogWithCommentsResponse
-	7, // 10: BlogService.CreateComment:output_type -> CommentResponse
-	7, // [7:11] is the sub-list for method output_type
-	3, // [3:7] is the sub-list for method input_type
+	8, // 7: BlogService.UpdateComment:input_type -> UpdateCommentRequest
+	1, // 8: BlogService.CreateBlog:output_type -> BlogResponse
+	3, // 9: BlogService.GetUserBlogs:output_type -> UserBlogsResponse
+	5, // 10: BlogService.GetBlogDetails:output_type -> BlogWithCommentsResponse
+	7, // 11: BlogService.CreateComment:output_type -> CommentResponse
+	7, // 12: BlogService.UpdateComment:output_type -> CommentResponse
+	8, // [8:13] is the sub-list for method output_type
+	3, // [3:8] is the sub-list for method input_type
 	3, // [3:3] is the sub-list for extension type_name
 	3, // [3:3] is the sub-list for extension extendee
 	0, // [0:3] is the sub-list for field type_name
@@ -604,7 +663,7 @@ func file_blog_blog_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_blog_blog_service_proto_rawDesc), len(file_blog_blog_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

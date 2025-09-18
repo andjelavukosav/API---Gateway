@@ -34,6 +34,13 @@ service BlogService {
         };
     }
 
+    rpc UpdateComment (UpdateCommentRequest) returns (CommentResponse) {
+    option (google.api.http) = {
+      put: "/blogs/comments/{id}"   
+      body: "*"
+    };
+  }
+
 }
 
 message CreateBlogRequest {
@@ -84,4 +91,9 @@ message CommentResponse {
     string content = 4;
     string created_at = 5;
     string updated_at = 6;
+}
+
+message UpdateCommentRequest {
+  string id = 1;        // path param
+  string content = 2;   // body
 }
