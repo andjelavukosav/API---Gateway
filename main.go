@@ -11,6 +11,8 @@ import (
 	blogpb "example/gateway/proto/blog"
 	imagepb "example/gateway/proto/image"
 	pb "example/gateway/proto/tours"
+	positionpb "example/gateway/proto/position"
+
 	"example/gateway/config"
 	"example/gateway/proto/stakeholders"
 	"example/gateway/proto/tours"
@@ -53,6 +55,10 @@ func main() {
 	// Inicijalizacija gRPC klijenta za Tours servis
 	toursClient := pb.NewToursServiceClient(toursConn)
 	toursImageClient := imagepb.NewImageServiceClient(toursConn)
+
+	// PositionService gRPC client
+	positionClient := positionpb.NewPositionServiceClient(toursConn)
+
 	// -------- gRPC-Gateway multiplexer --------
 	gwmux := runtime.NewServeMux()
 
@@ -65,6 +71,11 @@ func main() {
 	// Register Tours service
 	if err := tours.RegisterToursServiceHandlerClient(context.Background(), gwmux, toursClient); err != nil {
 		log.Fatalln("Failed to register Tours gateway:", err)
+	}
+
+	// Register PositionService REST endpoint-a preko gRPC-Gateway
+	if err := positionpb.RegisterPositionServiceHandlerClient(context.Background(), gwmux, positionClient); err != nil {
+		log.Fatalln("Failed to register PositionService gateway:", err)
 	}
 
 	// -------- Blogs gRPC connection --------

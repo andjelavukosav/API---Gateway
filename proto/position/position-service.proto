@@ -1,0 +1,37 @@
+syntax = "proto3";
+
+option go_package = "proto/position";
+
+import "google/api/annotations.proto";
+
+service PositionService {
+  rpc RecordPosition(RecordPositionRequest) returns (PositionResponse){
+    option (google.api.http) = {
+        post: "/position"
+        body: "*"
+    };
+  }
+
+  rpc GetCurrentPosition(GetCurrentPositionRequest) returns (PositionResponse) {
+    option (google.api.http) = {
+        get: "/position/{touristId}"
+    };
+  }
+}
+
+message RecordPositionRequest {
+  string touristId = 1;
+  double latitude = 2;
+  double longitude = 3;
+}
+
+message GetCurrentPositionRequest {
+  string touristId = 1;
+}
+
+message PositionResponse {
+  string touristId = 1;
+  double latitude = 2;
+  double longitude = 3;
+  int64 updatedAt = 4; // Unix timestamp
+}
