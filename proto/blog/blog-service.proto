@@ -1,0 +1,148 @@
+syntax = "proto3";
+
+option go_package = "proto/blog";
+
+import "google/api/annotations.proto";
+
+service BlogService {
+    rpc CreateBlog (CreateBlogRequest) returns (BlogResponse) {
+        option (google.api.http) = {
+            post: "/blogs/create-blog"
+            body:"*"
+        };
+    }
+
+//Dohvatanje blogova po userId
+    rpc GetUserBlogs (GetUserBlogsRequest) returns (UserBlogsResponse) {
+        option (google.api.http) = {
+            get: "/blogs/user"
+        };
+    }
+
+//Dohvatanje bloga po id-u sa komentarima
+    rpc GetBlogDetails (GetBlogDetailsRequest) returns (BlogWithCommentsResponse) {
+        option (google.api.http) = {
+            get: "/blogs/{id}/details"
+        };
+    }
+
+// Kreiranje komentara
+    rpc CreateComment (CreateCommentRequest) returns (CommentResponse) {
+        option (google.api.http) = {
+            post: "/blogs/{blog_id}/comments"
+            body: "*"
+        };
+    }
+
+    rpc UpdateComment (UpdateCommentRequest) returns (CommentResponse) {
+    option (google.api.http) = {
+      put: "/blogs/comments/{id}"   
+      body: "*"
+    };
+  }
+
+   // Toggle like/unlike
+    rpc ToggleLike (ToggleLikeRequest) returns (ToggleLikeResponse) {
+        option (google.api.http) = {
+            post: "/blogs/{blog_id}/likes:toggle"
+            body: "*" 
+        };
+    }
+
+    // Da li je trenutni korisnik lajkovao blog
+    rpc HasUserLiked (HasUserLikedRequest) returns (HasUserLikedResponse) {
+        option (google.api.http) = {
+            get: "/blogs/{blog_id}/likes/me"
+        };
+    }
+
+    // Ukupan broj lajkova
+    rpc CountLikes (CountLikesRequest) returns (CountLikesResponse) {
+        option (google.api.http) = {
+            get: "/blogs/{blog_id}/likes/count"
+        };
+    }
+
+}
+
+message CreateBlogRequest {
+  string title = 1;
+  string description = 2;
+  string user_id = 3;          // iz JWT tokena
+  repeated string images = 4;  // putanje do slika
+}
+
+message BlogResponse {
+  string id = 1;
+    string title = 2;
+    string description = 3;
+    string user_id = 4;
+    repeated string images = 5;
+    string created_at = 6;
+}
+
+
+message GetUserBlogsRequest {
+  string user_id = 1;  // iz JWT tokena
+}
+
+message UserBlogsResponse {
+  repeated BlogResponse blogs = 1;
+}
+
+message GetBlogDetailsRequest {
+  string id = 1;
+}
+
+message BlogWithCommentsResponse {
+  BlogResponse blog = 1;
+  repeated CommentResponse comments = 2;
+}
+
+// ================== Comment poruke ==================
+message CreateCommentRequest {
+    string blog_id = 1; // iz path-a
+    string content = 2; // iz body-ja
+    string user_id = 3; // iz JWT tokena
+}
+
+message CommentResponse {
+    string id = 1;
+    string blog_id = 2;
+    string user_id = 3;
+    string content = 4;
+    string created_at = 5;
+    string updated_at = 6;
+}
+
+message UpdateCommentRequest {
+  string id = 1;        // path param
+  string content = 2;   // body
+}
+
+message ToggleLikeRequest {
+  string blog_id = 1; // iz path-a
+  string user_id = 2; // iz JWT-a (gateway može da upiše ovde)
+}
+
+message ToggleLikeResponse {
+  bool  liked = 1;  // true = sada lajkovano, false = sada unlikovano
+  int64 total = 2;  // ukupan broj lajkova nakon akcije
+}
+
+message HasUserLikedRequest {
+  string blog_id = 1; // iz path-a
+  string user_id = 2; // iz JWT-a
+}
+
+message HasUserLikedResponse {
+  bool liked = 1;
+}
+
+message CountLikesRequest {
+  string blog_id = 1; // iz path-a
+}
+
+message CountLikesResponse {
+  int64 total = 1;
+}

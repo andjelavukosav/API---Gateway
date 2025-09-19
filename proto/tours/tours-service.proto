@@ -21,6 +21,13 @@ service ToursService {
     };
   }
 
+  // Dobavljanje ture po id
+  rpc GetTourById(GetTourByIdRequest) returns (TourResponse) {
+    option (google.api.http) = {
+      get: "/tours/tour/{id}"
+    };
+  }
+
   // Dodavanje ključne tačke na turu
   rpc AddKeyPoint(AddKeyPointRequest) returns (KeyPointResponse) {
     option (google.api.http) = {
@@ -28,6 +35,21 @@ service ToursService {
       body: "*"
     };
   }
+
+  rpc UpdateKeyPoint(UpdateKeyPointRequest) returns (KeyPointResponse) {
+    option (google.api.http) = {
+      put: "/tours/tour/{tourId}/update-keypoint"
+      body: "*"
+    };
+  }
+
+  rpc DeleteKeyPoint(DeleteKeyPointRequest) returns (DeleteKeyPointResponse) {
+    option (google.api.http) = {
+      delete: "/tours/tour/{tourId}/keypoint/{keypointId}"
+    };
+  } 
+
+
 }
 
 // ----------------- PORUKE -----------------
@@ -66,6 +88,9 @@ message GetAuthorToursResponse {
   repeated TourResponse tours = 1;
 }
 
+message GetTourByIdRequest {
+  string id = 1;
+}
 // ----------------- KLJUČNE TAČKE -----------------
 
 message KeyPoint {
@@ -74,7 +99,8 @@ message KeyPoint {
   string description = 3;
   double latitude = 4;
   double longitude = 5;
-  string imageURL = 6; // <- samo URL slike, fajl se ne šalje gRPC-om
+  string imageURL = 6; 
+  int32 order = 7;
 }
 
 message AddKeyPointRequest {
@@ -89,4 +115,22 @@ message KeyPointResponse {
   double latitude = 4;
   double longitude = 5;
   string imageURL = 6;
+  int32 order = 7;
 }
+
+message UpdateKeyPointRequest {
+  string tourId = 1;
+  KeyPoint keyPoint = 2;
+  string imageURL = 3; //opciono
+}
+
+message DeleteKeyPointRequest {
+  string tourId = 1;
+  string keypointId = 2;
+}
+
+message DeleteKeyPointResponse {
+  bool success = 1;
+}
+
+
