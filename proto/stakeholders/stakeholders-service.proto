@@ -43,6 +43,32 @@ service StakeholdersService {
       body: "*"
     };
   }
+
+  // RPC za dobijanje profila korisnika
+  rpc GetUserProfile(GetProfileRequest) returns (UserProfileResponse) {
+    option (google.api.http) = {
+      get: "/users/profile/{username}"
+    };
+  }
+
+  // RPC za ažuriranje profila korisnika
+  rpc UpdateUserProfile(UpdateProfileRequest) returns (UpdateProfileResponse) {
+    option (google.api.http) = {
+      put: "/users/profile/{username}"
+      body: "*"
+    };
+  }
+
+  // RPC za upload profilne slike
+  rpc UploadProfileImage(UploadProfileImageRequest) returns (UploadProfileImageResponse) {
+    option (google.api.http) = {
+      post: "/users/profile/upload-image"
+      body: "*"
+    };
+  }
+
+  
+
 }
 
 // ----------------- Poruke -----------------
@@ -66,11 +92,16 @@ message AuthenticationResponse {
 message GetAllUsersRequest {}
 
 message User {
-  string id       = 1;
-  string username = 2;
-  string email    = 3;
-  string role     = 4;
-  bool isBlocked    = 5; // dodato polje da frontend zna da li je blokiran
+  string id           = 1;
+  string username     = 2;
+  string email        = 3;
+  string role         = 4;
+  bool isBlocked      = 5;
+  string firstName    = 6;
+  string lastName     = 7;
+  string profileImage = 8;
+  string biography    = 9;
+  string motto        = 10;
 }
 
 message GetAllUsersResponse {
@@ -92,3 +123,45 @@ message UnblockUserRequest {
 message UnblockUserResponse {
   string message = 1;
 }
+
+message GetProfileRequest {
+  string username = 1;
+}
+
+message UserProfileResponse {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string role = 4;
+  string firstName = 5;
+  string lastName = 6;
+  string profileImage = 7;
+  string biography = 8;
+  string motto = 9;
+}
+
+message UpdateProfileRequest {
+  string username = 1;
+  string firstName = 2;
+  string lastName = 3;
+  string profileImage = 4;
+  string biography = 5;
+  string motto = 6;
+}
+
+message UpdateProfileResponse {
+  string message = 1;
+  bool success = 2;
+}
+
+message UploadProfileImageResponse {
+  string username = 1;
+  string image_path = 2;
+}
+
+// Request za upload profilne slike
+  message UploadProfileImageRequest {
+    bool success = 1;
+    string message = 2;
+    string image_url = 3;
+  }
