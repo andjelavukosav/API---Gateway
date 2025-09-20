@@ -92,11 +92,16 @@ message AuthenticationResponse {
 message GetAllUsersRequest {}
 
 message User {
-  string id       = 1;
-  string username = 2;
-  string email    = 3;
-  string role     = 4;
-  bool isBlocked    = 5; // dodato polje da frontend zna da li je blokiran
+  string id           = 1;
+  string username     = 2;
+  string email        = 3;
+  string role         = 4;
+  bool isBlocked      = 5;
+  string firstName    = 6;
+  string lastName     = 7;
+  string profileImage = 8;
+  string biography    = 9;
+  string motto        = 10;
 }
 
 message GetAllUsersResponse {
@@ -150,12 +155,13 @@ message UpdateProfileResponse {
 }
 
 message UploadProfileImageResponse {
-  string profileImageUrl = 1; 
+  string username = 1;
+  string image_path = 2;
 }
 
 // Request za upload profilne slike
   message UploadProfileImageRequest {
-    string username = 1;   // korisničko ime
-    bytes file = 2;        // sadrži fajl
-    string fileName = 3;   // originalno ime fajla
+    bool success = 1;
+    string message = 2;
+    string image_url = 3;
   }

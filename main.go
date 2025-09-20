@@ -10,14 +10,14 @@ import (
 
 	blogpb "example/gateway/proto/blog"
 	imagepb "example/gateway/proto/image"
-	pb "example/gateway/proto/tours"
 	positionpb "example/gateway/proto/position"
+	"example/gateway/proto/tours"
+	pb "example/gateway/proto/tours"
 
 	"example/gateway/config"
-	"example/gateway/proto/stakeholders"
-	"example/gateway/proto/tours"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
+	"example/gateway/proto/stakeholders"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -81,9 +81,9 @@ func main() {
 	// -------- Blogs gRPC connection --------
 	blogConn, err := grpc.DialContext(
 		context.Background(),
-		cfg.BlogServiceAddress, 
+		cfg.BlogServiceAddress,
 		//grpc.WithBlock(),
-    	grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Fatalln("Failed to dial BlogService:", err)
@@ -93,7 +93,7 @@ func main() {
 	// Blog REST preko gRPC client (sve rute osim multipart create)
 	blogClient := blogpb.NewBlogServiceClient(blogConn)
 	imageClient := imagepb.NewImageServiceClient(blogConn)
-	
+
 	// Registracija Blog servisa (sve osim multipart create)
 	if err = blogpb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
 		log.Fatalln("Failed to register BlogService gateway:", err)
@@ -101,12 +101,12 @@ func main() {
 
 	// ----- REST handler za multipart POST (create blog) -----
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
-	
+
 	// ---------------- Tour REST handler ----------------
 	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient)
 
 	r := mux.NewRouter()
-	
+
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
@@ -116,10 +116,9 @@ func main() {
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
 	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
 
-	
 	// gRPC Gateway fallback za ostale rute
 	r.PathPrefix("/").Handler(gwmux)
-	
+
 	// Omotaj router u CORS middleware
 	handler := middleware.CORSMiddleware(r)
 

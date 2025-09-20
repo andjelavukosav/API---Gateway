@@ -228,7 +228,12 @@ type User struct {
 	Username      string                 `protobuf:"bytes,2,opt,name=username,proto3" json:"username,omitempty"`
 	Email         string                 `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
 	Role          string                 `protobuf:"bytes,4,opt,name=role,proto3" json:"role,omitempty"`
-	IsBlocked     bool                   `protobuf:"varint,5,opt,name=isBlocked,proto3" json:"isBlocked,omitempty"` // dodato polje da frontend zna da li je blokiran
+	IsBlocked     bool                   `protobuf:"varint,5,opt,name=isBlocked,proto3" json:"isBlocked,omitempty"`
+	FirstName     string                 `protobuf:"bytes,6,opt,name=firstName,proto3" json:"firstName,omitempty"`
+	LastName      string                 `protobuf:"bytes,7,opt,name=lastName,proto3" json:"lastName,omitempty"`
+	ProfileImage  string                 `protobuf:"bytes,8,opt,name=profileImage,proto3" json:"profileImage,omitempty"`
+	Biography     string                 `protobuf:"bytes,9,opt,name=biography,proto3" json:"biography,omitempty"`
+	Motto         string                 `protobuf:"bytes,10,opt,name=motto,proto3" json:"motto,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -296,6 +301,41 @@ func (x *User) GetIsBlocked() bool {
 		return x.IsBlocked
 	}
 	return false
+}
+
+func (x *User) GetFirstName() string {
+	if x != nil {
+		return x.FirstName
+	}
+	return ""
+}
+
+func (x *User) GetLastName() string {
+	if x != nil {
+		return x.LastName
+	}
+	return ""
+}
+
+func (x *User) GetProfileImage() string {
+	if x != nil {
+		return x.ProfileImage
+	}
+	return ""
+}
+
+func (x *User) GetBiography() string {
+	if x != nil {
+		return x.Biography
+	}
+	return ""
+}
+
+func (x *User) GetMotto() string {
+	if x != nil {
+		return x.Motto
+	}
+	return ""
 }
 
 type GetAllUsersResponse struct {
@@ -809,10 +849,11 @@ func (x *UpdateProfileResponse) GetSuccess() bool {
 }
 
 type UploadProfileImageResponse struct {
-	state           protoimpl.MessageState `protogen:"open.v1"`
-	ProfileImageUrl string                 `protobuf:"bytes,1,opt,name=profileImageUrl,proto3" json:"profileImageUrl,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"`
+	ImagePath     string                 `protobuf:"bytes,2,opt,name=image_path,json=imagePath,proto3" json:"image_path,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *UploadProfileImageResponse) Reset() {
@@ -845,9 +886,16 @@ func (*UploadProfileImageResponse) Descriptor() ([]byte, []int) {
 	return file_stakeholders_stakeholders_service_proto_rawDescGZIP(), []int{14}
 }
 
-func (x *UploadProfileImageResponse) GetProfileImageUrl() string {
+func (x *UploadProfileImageResponse) GetUsername() string {
 	if x != nil {
-		return x.ProfileImageUrl
+		return x.Username
+	}
+	return ""
+}
+
+func (x *UploadProfileImageResponse) GetImagePath() string {
+	if x != nil {
+		return x.ImagePath
 	}
 	return ""
 }
@@ -855,9 +903,9 @@ func (x *UploadProfileImageResponse) GetProfileImageUrl() string {
 // Request za upload profilne slike
 type UploadProfileImageRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Username      string                 `protobuf:"bytes,1,opt,name=username,proto3" json:"username,omitempty"` // korisničko ime
-	File          []byte                 `protobuf:"bytes,2,opt,name=file,proto3" json:"file,omitempty"`         // sadrži fajl
-	FileName      string                 `protobuf:"bytes,3,opt,name=fileName,proto3" json:"fileName,omitempty"` // originalno ime fajla
+	Success       bool                   `protobuf:"varint,1,opt,name=success,proto3" json:"success,omitempty"`
+	Message       string                 `protobuf:"bytes,2,opt,name=message,proto3" json:"message,omitempty"`
+	ImageUrl      string                 `protobuf:"bytes,3,opt,name=image_url,json=imageUrl,proto3" json:"image_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -892,23 +940,23 @@ func (*UploadProfileImageRequest) Descriptor() ([]byte, []int) {
 	return file_stakeholders_stakeholders_service_proto_rawDescGZIP(), []int{15}
 }
 
-func (x *UploadProfileImageRequest) GetUsername() string {
+func (x *UploadProfileImageRequest) GetSuccess() bool {
 	if x != nil {
-		return x.Username
+		return x.Success
+	}
+	return false
+}
+
+func (x *UploadProfileImageRequest) GetMessage() string {
+	if x != nil {
+		return x.Message
 	}
 	return ""
 }
 
-func (x *UploadProfileImageRequest) GetFile() []byte {
+func (x *UploadProfileImageRequest) GetImageUrl() string {
 	if x != nil {
-		return x.File
-	}
-	return nil
-}
-
-func (x *UploadProfileImageRequest) GetFileName() string {
-	if x != nil {
-		return x.FileName
+		return x.ImageUrl
 	}
 	return ""
 }
@@ -928,13 +976,19 @@ const file_stakeholders_stakeholders_service_proto_rawDesc = "" +
 	"\bpassword\x18\x02 \x01(\tR\bpassword\":\n" +
 	"\x16AuthenticationResponse\x12 \n" +
 	"\vaccessToken\x18\x01 \x01(\tR\vaccessToken\"\x14\n" +
-	"\x12GetAllUsersRequest\"z\n" +
+	"\x12GetAllUsersRequest\"\x8c\x02\n" +
 	"\x04User\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\busername\x18\x02 \x01(\tR\busername\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x12\n" +
 	"\x04role\x18\x04 \x01(\tR\x04role\x12\x1c\n" +
-	"\tisBlocked\x18\x05 \x01(\bR\tisBlocked\"2\n" +
+	"\tisBlocked\x18\x05 \x01(\bR\tisBlocked\x12\x1c\n" +
+	"\tfirstName\x18\x06 \x01(\tR\tfirstName\x12\x1a\n" +
+	"\blastName\x18\a \x01(\tR\blastName\x12\"\n" +
+	"\fprofileImage\x18\b \x01(\tR\fprofileImage\x12\x1c\n" +
+	"\tbiography\x18\t \x01(\tR\tbiography\x12\x14\n" +
+	"\x05motto\x18\n" +
+	" \x01(\tR\x05motto\"2\n" +
 	"\x13GetAllUsersResponse\x12\x1b\n" +
 	"\x05users\x18\x01 \x03(\v2\x05.UserR\x05users\"\"\n" +
 	"\x10BlockUserRequest\x12\x0e\n" +
@@ -966,13 +1020,15 @@ const file_stakeholders_stakeholders_service_proto_rawDesc = "" +
 	"\x05motto\x18\x06 \x01(\tR\x05motto\"K\n" +
 	"\x15UpdateProfileResponse\x12\x18\n" +
 	"\amessage\x18\x01 \x01(\tR\amessage\x12\x18\n" +
-	"\asuccess\x18\x02 \x01(\bR\asuccess\"F\n" +
-	"\x1aUploadProfileImageResponse\x12(\n" +
-	"\x0fprofileImageUrl\x18\x01 \x01(\tR\x0fprofileImageUrl\"g\n" +
-	"\x19UploadProfileImageRequest\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x12\n" +
-	"\x04file\x18\x02 \x01(\fR\x04file\x12\x1a\n" +
-	"\bfileName\x18\x03 \x01(\tR\bfileName2\x8a\x06\n" +
+	"\asuccess\x18\x02 \x01(\bR\asuccess\"W\n" +
+	"\x1aUploadProfileImageResponse\x12\x1a\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12\x1d\n" +
+	"\n" +
+	"image_path\x18\x02 \x01(\tR\timagePath\"l\n" +
+	"\x19UploadProfileImageRequest\x12\x18\n" +
+	"\asuccess\x18\x01 \x01(\bR\asuccess\x12\x18\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\x12\x1b\n" +
+	"\timage_url\x18\x03 \x01(\tR\bimageUrl2\x8a\x06\n" +
 	"\x13StakeholdersService\x12Y\n" +
 	"\fRegisterUser\x12\x14.RegistrationRequest\x1a\x17.AuthenticationResponse\"\x1a\x82\xd3\xe4\x93\x02\x14:\x01*\"\x0f/users/register\x12L\n" +
 	"\tLoginUser\x12\r.LoginRequest\x1a\x17.AuthenticationResponse\"\x17\x82\xd3\xe4\x93\x02\x11:\x01*\"\f/users/login\x12R\n" +
