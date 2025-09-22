@@ -49,7 +49,32 @@ service ToursService {
     };
   } 
 
+  // Dobavljanje svih publikovanih tura (za frontend)
+  rpc GetPublishedTours(GetPublishedToursRequest) returns (GetPublishedToursResponse) {
+    option (google.api.http) = {
+      get: "/tours/published"
+    };
+  }
 
+}
+
+// Zahtev je prazan
+message GetPublishedToursRequest {}
+
+// Odgovor sadrži listu tura
+message GetPublishedToursResponse {
+  repeated PublishedTour tours = 1;
+}
+
+// Poruka koja sadrži sve što frontend očekuje
+message PublishedTour {
+  string id = 1;
+  string name = 2;
+  double price = 3;
+  string description = 4;
+  double length = 5;
+  string startTime = 6;
+  repeated KeyPoint keyPoints = 7;
 }
 
 // ----------------- PORUKE -----------------
