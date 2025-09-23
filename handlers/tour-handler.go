@@ -8,11 +8,14 @@ import (
 	"strconv"
 	"strings"
 	"fmt"
+	"log"
 
 	pb "example/gateway/proto/tours"
 	imagepb "example/gateway/proto/image"
+	"example/gateway/util"
 
 	"github.com/gorilla/mux"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 type TourGatewayHandler struct {
@@ -25,6 +28,57 @@ func NewTourGatewayHandler(toursClient pb.ToursServiceClient, imageClient imagep
 		ToursClient: toursClient,
 		ImageClient: imageClient,
 	}
+}
+
+func (h *TourGatewayHandler) CreateTourHandler(w http.ResponseWriter, r *http.Request) {
+	// Izvlacimo userID iz tokena
+	userID, err := util.ExtractUserIDFromToken(r)
+	if err != nil {
+		http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+        return
+	}
+	log.Printf("Extracted userID from token: %s", userID)
+
+	// Dekodiramo JSON body u protobuf CreateTourRequest
+	var req pb.CreateTourRequest 
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "Failed to read request body: "+err.Error(), http.StatusBadRequest)
+        return
+	}
+	log.Printf("Raw request body: %s", string(body))
+
+	// pretvaramo JSON podatke u Go strukturu
+	if err := json.Unmarshal(body, &req); err != nil {
+        http.Error(w, "Invalid JSON body: "+err.Error(), http.StatusBadRequest)
+        return
+    }
+	log.Printf("Decoded JSON -> req: %+v", req)
+
+
+	req.AuthorId = userID
+	log.Printf("Final req (after overriding AuthorId): %+v", req)
+
+
+	createdTour, err := h.ToursClient.CreateTour(r.Context(), &req)
+	if err != nil {
+		http.Error(w, "Failed to create tour: "+err.Error(), http.StatusInternalServerError)
+        return
+	}
+	log.Printf("Created tour response: %+v", createdTour)
+
+
+	// Vracamo createdTour kao JSON
+	w.Header().Set("Content-Type", "application/json")
+    marshaler := protojson.MarshalOptions{
+		UseEnumNumbers: false, // važno! ovo vraća enum kao string, ne broj
+	}
+	jsonBytes, err := marshaler.Marshal(createdTour)
+	if err != nil {
+		http.Error(w, "Failed to marshal protobuf: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(jsonBytes)
 }
 
 func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.Request) {
@@ -267,3 +321,52 @@ func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, e
 		Order:       reqBody.Order,
 	}, nil
 }
+
+func (h *TourGatewayHandler) UpdateTourStatusHandler(w http.ResponseWriter, r *http.Request) {
+    vars := mux.Vars(r)
+    tourId := vars["tourId"]
+    if tourId == "" {
+        http.Error(w, "tourId is required", http.StatusBadRequest)
+        return
+    }
+
+    userID, err := util.ExtractUserIDFromToken(r)
+    if err != nil {
+        http.Error(w, "Unauthorized: "+err.Error(), http.StatusUnauthorized)
+        return
+    }
+
+	var body struct {
+		NewStatus string `json:"newStatus"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, "Invalid request body: "+err.Error(), http.StatusBadRequest)
+		return
+	}
+	var status pb.TourStatus
+	switch strings.ToUpper(body.NewStatus) {
+	case "PUBLISHED":
+		status = pb.TourStatus_PUBLISHED
+	case "ARCHIVED":
+		status = pb.TourStatus_ARCHIVED
+	default:
+		http.Error(w, "Invalid status", http.StatusBadRequest)
+		return
+	}
+
+    req := &pb.UpdateTourStatusRequest{
+        TourId:   tourId,
+        AuthorId: userID,
+		NewStatus: status,
+    }
+
+    resp, err := h.ToursClient.UpdateTourStatus(r.Context(), req)
+    if err != nil {
+        http.Error(w, "Failed to update tour status: "+err.Error(), http.StatusInternalServerError)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(resp)
+}
+

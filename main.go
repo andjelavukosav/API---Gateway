@@ -107,10 +107,12 @@ func main() {
 
 	r := mux.NewRouter()
 	
+	r.HandleFunc("/tours/create-tour", tourHandler.CreateTourHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
+	r.HandleFunc("/tours/{tourId}/update-status", tourHandler.UpdateTourStatusHandler).Methods("PATCH", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
-
+	
 	r.HandleFunc("/blogs/create-blog", blogHandler.CreateBlogHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")

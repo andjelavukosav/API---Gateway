@@ -3,6 +3,7 @@ syntax = "proto3";
 option go_package = "proto/tours";
 
 import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
 
 // ----------------- SERVIS -----------------
 service ToursService {
@@ -49,33 +50,61 @@ service ToursService {
     };
   } 
 
+  // Publishovanje i arhiviranje ture
+  rpc UpdateTourStatus(UpdateTourStatusRequest) returns (UpdateTourStatusResponse) {
+    option (google.api.http) = {
+      patch: "/tours/{tourId}/update-status"
+      body: "*"
+    };
+  }
 
 }
 
 // ----------------- PORUKE -----------------
 
-// Tura
+// Zahtev za kreiranje ture
+message CreateTourRequest {
+  string name = 1;
+  string description = 2;
+  string difficulty = 3;
+  repeated string tags = 4;
+  string authorId = 5; 
+}
+
+// Odgovor sa kreiranom turom
 message TourResponse {
   string id = 1;
   string name = 2;
   string description = 3;
   string difficulty = 4;
   repeated string tags = 5;
-  string status = 6;
+  TourStatus status = 6;
   double price = 7;
   string authorId = 8;
-  repeated KeyPoint keyPoints = 9;
+  repeated KeyPoint keyPoints = 9; 
+  repeated Duration durations = 10;
+  double distance = 11;    
+  google.protobuf.Timestamp publishedAt = 12;
+  google.protobuf.Timestamp archivedAt = 13;  
 }
 
-// Kreiranje ture
-message CreateTourRequest {
-  string name = 1;
-  string description = 2;
-  string difficulty = 3;
-  repeated string tags = 4;
-  string status = 5;
-  double price = 6;
-  string authorId = 7;
+enum TourStatus {
+  TOUR_STATUS_UNSPECIFIED = 0;
+  DRAFT = 1;
+  PUBLISHED = 2;
+  ARCHIVED = 3;
+}
+
+enum TransportType {
+  TRANSPORT_TYPE_UNSPECIFIED = 0;
+  WALKING = 1;
+  BIKE = 2;
+  CAR = 3;
+}
+
+message Duration {
+  TransportType mode = 1;
+  int32 minutes = 2;
 }
 
 // Zahtev za listu tura autora
@@ -91,6 +120,19 @@ message GetAuthorToursResponse {
 message GetTourByIdRequest {
   string id = 1;
 }
+
+message UpdateTourStatusRequest {
+  string tourId = 1;
+  string authorId = 2;
+  TourStatus newStatus = 3;  // Publish ili Archive
+}
+
+message UpdateTourStatusResponse {
+  string tourId = 1;
+  TourStatus status = 2;
+  google.protobuf.Timestamp updatedAt = 3;
+}
+
 // ----------------- KLJUČNE TAČKE -----------------
 
 message KeyPoint {
