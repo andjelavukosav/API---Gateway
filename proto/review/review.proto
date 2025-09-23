@@ -1,0 +1,127 @@
+syntax = "proto3";
+
+package review;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+
+option go_package = "example/proto/review";
+
+
+// ----------------- REVIEW SERVIS -----------------
+service ReviewService {
+  rpc CreateReview(CreateReviewRequest) returns (ReviewResponse) {
+    option (google.api.http) = {
+      post: "/reviews"
+      body: "*"
+    };
+  }
+
+  rpc GetReview(GetReviewRequest) returns (ReviewResponse) {
+    option (google.api.http) = {
+      get: "/reviews/{id}"
+    };
+  }
+
+  rpc GetReviewsByTour(GetReviewsByTourRequest) returns (GetReviewsResponse) {
+    option (google.api.http) = {
+      get: "/tours/{tour_id}/reviews"
+    };
+  }
+
+  rpc GetReviewsByTourist(GetReviewsByTouristRequest) returns (GetReviewsResponse) {
+    option (google.api.http) = {
+      get: "/tourists/{tourist_id}/reviews"
+    };
+  }
+
+  rpc UpdateReview(UpdateReviewRequest) returns (ReviewResponse) {
+    option (google.api.http) = {
+      put: "/reviews/{id}"
+      body: "*"
+    };
+  }
+
+  rpc DeleteReview(DeleteReviewRequest) returns (DeleteReviewResponse) {
+    option (google.api.http) = {
+      delete: "/reviews/{id}"
+    };
+  }
+
+  rpc GetAverageRating(GetAverageRatingRequest) returns (GetAverageRatingResponse) {
+    option (google.api.http) = {
+      get: "/tours/{tour_id}/average-rating"
+    };
+  }
+}
+
+// ----------------- REVIEW PORUKE -----------------
+message Review {
+  string id = 1;
+  int32 rating = 2;
+  string comment = 3;
+  string tourist_id = 4;
+  string tour_id = 5;
+  google.protobuf.Timestamp visit_date = 6;
+  google.protobuf.Timestamp comment_date = 7;
+  repeated string images = 8;
+  string tourist_name = 9;
+  string tourist_image = 10;
+}
+
+message CreateReviewRequest {
+  int32 rating = 1;
+  string comment = 2;
+  string tourist_id = 3;
+  string tour_id = 4;
+  google.protobuf.Timestamp visit_date = 5;
+  repeated string images = 6;
+  string tourist_name = 7;
+  string tourist_image = 8;
+}
+
+message GetReviewRequest {
+  string id = 1;
+}
+
+message GetReviewsByTourRequest {
+  string tour_id = 1;
+}
+
+message GetReviewsByTouristRequest {
+  string tourist_id = 1;
+}
+
+message UpdateReviewRequest {
+  string id = 1;
+  int32 rating = 2;
+  string comment = 3;
+  google.protobuf.Timestamp visit_date = 4;
+  repeated string images = 5;
+  string tourist_name = 6;
+  string tourist_image = 7;
+}
+
+message DeleteReviewRequest {
+  string id = 1;
+}
+
+message GetAverageRatingRequest {
+  string tour_id = 1;
+}
+
+message ReviewResponse {
+  Review review = 1;
+}
+
+message GetReviewsResponse {
+  repeated Review reviews = 1;
+}
+
+message DeleteReviewResponse {
+  bool success = 1;
+}
+
+message GetAverageRatingResponse {
+  double average_rating = 1;
+}

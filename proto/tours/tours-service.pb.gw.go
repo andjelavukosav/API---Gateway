@@ -267,6 +267,27 @@ func local_request_ToursService_DeleteKeyPoint_0(ctx context.Context, marshaler 
 	return msg, metadata, err
 }
 
+func request_ToursService_GetAllTours_0(ctx context.Context, marshaler runtime.Marshaler, client ToursServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetAllToursRequest
+		metadata runtime.ServerMetadata
+	)
+	if req.Body != nil {
+		_, _ = io.Copy(io.Discard, req.Body)
+	}
+	msg, err := client.GetAllTours(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+}
+
+func local_request_ToursService_GetAllTours_0(ctx context.Context, marshaler runtime.Marshaler, server ToursServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var (
+		protoReq GetAllToursRequest
+		metadata runtime.ServerMetadata
+	)
+	msg, err := server.GetAllTours(ctx, &protoReq)
+	return msg, metadata, err
+}
+
 // RegisterToursServiceHandlerServer registers the http handlers for service ToursService to "mux".
 // UnaryRPC     :call ToursServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
@@ -392,6 +413,26 @@ func RegisterToursServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 		forward_ToursService_DeleteKeyPoint_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
+	mux.Handle(http.MethodGet, pattern_ToursService_GetAllTours_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/.ToursService/GetAllTours", runtime.WithHTTPPathPattern("/tours/all"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_ToursService_GetAllTours_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_ToursService_GetAllTours_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
 
 	return nil
@@ -535,6 +576,23 @@ func RegisterToursServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 		}
 		forward_ToursService_DeleteKeyPoint_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 	})
+	mux.Handle(http.MethodGet, pattern_ToursService_GetAllTours_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		annotatedContext, err := runtime.AnnotateContext(ctx, mux, req, "/.ToursService/GetAllTours", runtime.WithHTTPPathPattern("/tours/all"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ToursService_GetAllTours_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		forward_ToursService_GetAllTours_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+	})
 	return nil
 }
 
@@ -545,6 +603,7 @@ var (
 	pattern_ToursService_AddKeyPoint_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"tours", "add-keypoint-grpc"}, ""))
 	pattern_ToursService_UpdateKeyPoint_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"tours", "tour", "tourId", "update-keypoint"}, ""))
 	pattern_ToursService_DeleteKeyPoint_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"tours", "tour", "tourId", "keypoint", "keypointId"}, ""))
+	pattern_ToursService_GetAllTours_0    = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"tours", "all"}, ""))
 )
 
 var (
@@ -554,4 +613,5 @@ var (
 	forward_ToursService_AddKeyPoint_0    = runtime.ForwardResponseMessage
 	forward_ToursService_UpdateKeyPoint_0 = runtime.ForwardResponseMessage
 	forward_ToursService_DeleteKeyPoint_0 = runtime.ForwardResponseMessage
+	forward_ToursService_GetAllTours_0    = runtime.ForwardResponseMessage
 )
