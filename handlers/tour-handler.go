@@ -69,7 +69,6 @@ func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.R
 
 func (h *TourGatewayHandler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
 	filename := r.URL.Path[len("/tours/uploads/"):] // izvuče samo ime fajla
-	filename := r.URL.Path[len("/tours/uploads/"):]
 	if filename == "" {
 		http.Error(w, "filename required", http.StatusBadRequest)
 		return

@@ -123,12 +123,6 @@ message GetTourByIdRequest {
   string id = 1;
 }
 
-message GetAllToursRequest {}
-
-message GetAllToursResponse {
-  repeated TourResponse tours = 1;
-}
-
 // ----------------- KLJUČNE TAČKE -----------------
 message KeyPoint {
   string id = 1;
