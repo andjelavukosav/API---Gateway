@@ -56,6 +56,11 @@ service ToursService {
     };
   }
 
+  rpc GetAllTours(GetAllToursRequest) returns (GetAllToursResponse) {
+      option (google.api.http) = {
+        get: "/tours/all"
+      };
+    }
 }
 
 // Zahtev je prazan
@@ -158,4 +163,10 @@ message DeleteKeyPointResponse {
   bool success = 1;
 }
 
+// Zahtev može biti prazan
+message GetAllToursRequest {}
 
+// Odgovor sadrži listu svih tura
+message GetAllToursResponse {
+  repeated PublishedTour tours = 1;
+}

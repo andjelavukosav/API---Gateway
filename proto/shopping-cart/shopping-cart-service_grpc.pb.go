@@ -19,7 +19,8 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	OrdersService_CreateOrder_FullMethodName = "/OrdersService/CreateOrder"
+	OrdersService_CreateOrder_FullMethodName       = "/OrdersService/CreateOrder"
+	OrdersService_GetPurchasedTours_FullMethodName = "/OrdersService/GetPurchasedTours"
 )
 
 // OrdersServiceClient is the client API for OrdersService service.
@@ -28,6 +29,7 @@ const (
 type OrdersServiceClient interface {
 	// Kreiranje nove narudžbine sa više tura
 	CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*CreateOrderResponse, error)
+	GetPurchasedTours(ctx context.Context, in *GetPurchasedToursRequest, opts ...grpc.CallOption) (*GetPurchasedToursResponse, error)
 }
 
 type ordersServiceClient struct {
@@ -47,12 +49,22 @@ func (c *ordersServiceClient) CreateOrder(ctx context.Context, in *CreateOrderRe
 	return out, nil
 }
 
+func (c *ordersServiceClient) GetPurchasedTours(ctx context.Context, in *GetPurchasedToursRequest, opts ...grpc.CallOption) (*GetPurchasedToursResponse, error) {
+	out := new(GetPurchasedToursResponse)
+	err := c.cc.Invoke(ctx, OrdersService_GetPurchasedTours_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrdersServiceServer is the server API for OrdersService service.
 // All implementations must embed UnimplementedOrdersServiceServer
 // for forward compatibility
 type OrdersServiceServer interface {
 	// Kreiranje nove narudžbine sa više tura
 	CreateOrder(context.Context, *CreateOrderRequest) (*CreateOrderResponse, error)
+	GetPurchasedTours(context.Context, *GetPurchasedToursRequest) (*GetPurchasedToursResponse, error)
 	mustEmbedUnimplementedOrdersServiceServer()
 }
 
@@ -62,6 +74,9 @@ type UnimplementedOrdersServiceServer struct {
 
 func (UnimplementedOrdersServiceServer) CreateOrder(context.Context, *CreateOrderRequest) (*CreateOrderResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateOrder not implemented")
+}
+func (UnimplementedOrdersServiceServer) GetPurchasedTours(context.Context, *GetPurchasedToursRequest) (*GetPurchasedToursResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPurchasedTours not implemented")
 }
 func (UnimplementedOrdersServiceServer) mustEmbedUnimplementedOrdersServiceServer() {}
 
@@ -94,6 +109,24 @@ func _OrdersService_CreateOrder_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrdersService_GetPurchasedTours_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPurchasedToursRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrdersServiceServer).GetPurchasedTours(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrdersService_GetPurchasedTours_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrdersServiceServer).GetPurchasedTours(ctx, req.(*GetPurchasedToursRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrdersService_ServiceDesc is the grpc.ServiceDesc for OrdersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -104,6 +137,10 @@ var OrdersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateOrder",
 			Handler:    _OrdersService_CreateOrder_Handler,
+		},
+		{
+			MethodName: "GetPurchasedTours",
+			Handler:    _OrdersService_GetPurchasedTours_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

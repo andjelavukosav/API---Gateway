@@ -13,6 +13,12 @@ service OrdersService {
       body: "*"
     };
   }
+
+   rpc GetPurchasedTours(GetPurchasedToursRequest) returns (GetPurchasedToursResponse) {
+    option (google.api.http) = {
+      get: "/orders/purchased-tours"
+    };
+  }
 }
 
 // ----------------- PORUKE -----------------
@@ -36,4 +42,14 @@ message CreateOrderRequest {
 message CreateOrderResponse {
   bool success = 1;
   string orderId = 2; // opciono, id nove narudžbine
+}
+
+// Request sadrži ID korisnika
+message GetPurchasedToursRequest {
+  string userId = 1;
+}
+
+// Response vraća listu ID-jeva tura
+message GetPurchasedToursResponse {
+  repeated string tourIds = 1;
 }

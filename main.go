@@ -12,9 +12,9 @@ import (
 	blogpb "example/gateway/proto/blog"
 	imagepb "example/gateway/proto/image"
 	positionpb "example/gateway/proto/position"
+	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
 	stakeholderspb "example/gateway/proto/stakeholders"
 	tourspb "example/gateway/proto/tours"
-	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
 
 	"example/gateway/config"
 	"example/gateway/handlers"
@@ -104,7 +104,7 @@ func main() {
 
 	// -------- Custom HTTP Handlers --------
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
-	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient)
+	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient, ordersClient)
 
 	r := mux.NewRouter()
 
@@ -118,6 +118,8 @@ func main() {
 	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
 	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
+
+	r.HandleFunc("/tours/purchased", tourHandler.GetPurchasedToursHandler).Methods("GET")
 
 	// Fallback na gRPC-Gateway rute
 	r.PathPrefix("/").Handler(gwmux)
