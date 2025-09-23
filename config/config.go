@@ -12,7 +12,7 @@ type Config struct {
 func GetConfig() Config {
 	return Config{
 		StakeholdersServiceAddress: os.Getenv("STAKEHOLDERS_SERVICE_ADDRESS"),
-		BlogServiceAddress:         os.Getenv("BLOG_SERVICE_ADDRESS"), 
+		BlogServiceAddress:         os.Getenv("BLOG_SERVICE_ADDRESS"),
 		Address:                    os.Getenv("GATEWAY_ADDRESS"),
 		ToursServiceAddress:        os.Getenv("TOURS_SERVICE_ADDRESS"),
 	}

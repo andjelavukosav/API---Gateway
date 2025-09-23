@@ -11,13 +11,14 @@ import (
 	blogpb "example/gateway/proto/blog"
 	imagepb "example/gateway/proto/image"
 	positionpb "example/gateway/proto/position"
+	reviewpb "example/gateway/proto/review"
+	"example/gateway/proto/stakeholders"
 	"example/gateway/proto/tours"
 	pb "example/gateway/proto/tours"
 
 	"example/gateway/config"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
-	"example/gateway/proto/stakeholders"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -32,7 +33,6 @@ func main() {
 	stakeholdersConn, err := grpc.DialContext(
 		context.Background(),
 		cfg.StakeholdersServiceAddress,
-		//grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -44,7 +44,6 @@ func main() {
 	toursConn, err := grpc.DialContext(
 		context.Background(),
 		cfg.ToursServiceAddress,
-		//grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -52,9 +51,10 @@ func main() {
 	}
 	defer toursConn.Close()
 
-	// Inicijalizacija gRPC klijenta za Tours servis
+	// Inicijalizacija gRPC klijenata
 	toursClient := pb.NewToursServiceClient(toursConn)
 	toursImageClient := imagepb.NewImageServiceClient(toursConn)
+	reviewClient := reviewpb.NewReviewServiceClient(toursConn)
 
 	// PositionService gRPC client
 	positionClient := positionpb.NewPositionServiceClient(toursConn)
@@ -78,11 +78,15 @@ func main() {
 		log.Fatalln("Failed to register PositionService gateway:", err)
 	}
 
+	// Register Review service
+	if err := reviewpb.RegisterReviewServiceHandlerClient(context.Background(), gwmux, reviewClient); err != nil {
+		log.Fatalln("Failed to register ReviewService gateway:", err)
+	}
+
 	// -------- Blogs gRPC connection --------
 	blogConn, err := grpc.DialContext(
 		context.Background(),
 		cfg.BlogServiceAddress,
-		//grpc.WithBlock(),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
@@ -102,15 +106,31 @@ func main() {
 	// ----- REST handler za multipart POST (create blog) -----
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
 
-	// ---------------- Tour REST handler ----------------
+	// ---------------- Handler-i ----------------
+	// Tour handler - SAMO ZA TOUR METODE (bez reviewClient)
 	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient)
+
+	// Review handler - SAMO ZA REVIEW METODE
+	reviewHandler := handlers.NewReviewHandler(reviewClient, toursImageClient)
 
 	r := mux.NewRouter()
 
+	// ----------------- TOUR RUTE -----------------
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
 
+	// ----------------- REVIEW RUTE -----------------
+	r.HandleFunc("/tours/reviews", reviewHandler.CreateReviewHandler).Methods("POST")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.GetReviewHandler).Methods("GET")
+	r.HandleFunc("/tours/{tour_id}/reviews", reviewHandler.GetReviewsByTourHandler).Methods("GET")
+	r.HandleFunc("/tours/tourist/{tourist_id}/reviews", reviewHandler.GetReviewsByTouristHandler).Methods("GET")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.UpdateReviewHandler).Methods("PUT")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.DeleteReviewHandler).Methods("DELETE")
+	r.HandleFunc("/tours/{tour_id}/average-rating", reviewHandler.GetAverageRatingHandler).Methods("GET")
+	r.PathPrefix("/reviews/uploads/").HandlerFunc(reviewHandler.DownloadReviewImageHandler).Methods("GET")
+
+	// ----------------- BLOG RUTE -----------------
 	r.HandleFunc("/blogs/create-blog", blogHandler.CreateBlogHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")

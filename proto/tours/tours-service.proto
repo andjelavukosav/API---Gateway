@@ -4,7 +4,7 @@ option go_package = "proto/tours";
 
 import "google/api/annotations.proto";
 
-// ----------------- SERVIS -----------------
+// ----------------- TOURS SERVIS -----------------
 service ToursService {
   // Kreiranje nove ture
   rpc CreateTour(CreateTourRequest) returns (TourResponse) {
@@ -49,10 +49,14 @@ service ToursService {
     };
   } 
 
-
+  rpc GetAllTours(GetAllToursRequest) returns (GetAllToursResponse) {
+    option (google.api.http) = {
+      get: "/tours/all"
+    };
+  }
 }
 
-// ----------------- PORUKE -----------------
+// ----------------- TOURS PORUKE -----------------
 
 // Tura
 message TourResponse {
@@ -65,6 +69,7 @@ message TourResponse {
   double price = 7;
   string authorId = 8;
   repeated KeyPoint keyPoints = 9;
+  double averageRating = 10; // Ostaje jer se dobija iz ReviewService
 }
 
 // Kreiranje ture
@@ -91,8 +96,14 @@ message GetAuthorToursResponse {
 message GetTourByIdRequest {
   string id = 1;
 }
-// ----------------- KLJUČNE TAČKE -----------------
 
+message GetAllToursRequest {}
+
+message GetAllToursResponse {
+  repeated TourResponse tours = 1;
+}
+
+// ----------------- KLJUČNE TAČKE -----------------
 message KeyPoint {
   string id = 1;
   string name = 2;
@@ -104,8 +115,8 @@ message KeyPoint {
 }
 
 message AddKeyPointRequest {
-  string tourId = 1;  // ID ture kojoj se dodaje tačka
-  KeyPoint point = 2; // Detalji tačke
+  string tourId = 1;
+  KeyPoint point = 2;
 }
 
 message KeyPointResponse {
@@ -121,7 +132,7 @@ message KeyPointResponse {
 message UpdateKeyPointRequest {
   string tourId = 1;
   KeyPoint keyPoint = 2;
-  string imageURL = 3; //opciono
+  string imageURL = 3;
 }
 
 message DeleteKeyPointRequest {
@@ -132,5 +143,3 @@ message DeleteKeyPointRequest {
 message DeleteKeyPointResponse {
   bool success = 1;
 }
-
-
