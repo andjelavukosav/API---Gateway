@@ -1,33 +1,34 @@
 # Start from the latest golang base image
 FROM golang:latest as builder
 
+# Install git
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # Set the Current Working Directory inside the container
 WORKDIR /app
 
 # Copy go mod and sum files
 COPY go.mod go.sum ./
 
-# Download all dependencies. Dependencies will be cached if the go.mod and go.sum files are not changed
+# Download dependencies
 RUN go mod download
 
-# Copy everything from the current directory to the Working Directory inside the container
+# Copy the rest of the source code
 COPY . .
 
-# Build the Go app
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
-
-
+# Build the Go app WITHOUT VCS stamping
+RUN CGO_ENABLED=0 GOOS=linux go build -buildvcs=false -a -installsuffix cgo -o main .
 
 ######## Start a new stage from scratch #######
 FROM alpine:latest
 
 WORKDIR /root/
 
-# Copy the Pre-built binary file from the previous stage
+# Copy the Pre-built binary
 COPY --from=builder /app/main .
 
-# Expose port 8000 to the outside world
+# Expose port 8000
 EXPOSE 8000
 
-# Command to run the executable
+# Run the executable
 CMD ["./main"]

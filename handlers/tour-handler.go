@@ -4,26 +4,34 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	imagepb "example/gateway/proto/image"
+	shopping_cart "example/gateway/proto/shopping-cart"
 	pb "example/gateway/proto/tours"
 
 	"github.com/gorilla/mux"
 )
 
 type TourGatewayHandler struct {
-	ToursClient pb.ToursServiceClient
-	ImageClient imagepb.ImageServiceClient
+	ToursClient  pb.ToursServiceClient
+	ImageClient  imagepb.ImageServiceClient
+	OrdersClient shopping_cart.OrdersServiceClient
 }
 
-func NewTourGatewayHandler(toursClient pb.ToursServiceClient, imageClient imagepb.ImageServiceClient) *TourGatewayHandler {
+func NewTourGatewayHandler(
+	toursClient pb.ToursServiceClient,
+	imageClient imagepb.ImageServiceClient,
+	ordersClient shopping_cart.OrdersServiceClient,
+) *TourGatewayHandler {
 	return &TourGatewayHandler{
-		ToursClient: toursClient,
-		ImageClient: imageClient,
+		ToursClient:  toursClient,
+		ImageClient:  imageClient,
+		OrdersClient: ordersClient,
 	}
 }
 
@@ -60,12 +68,12 @@ func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.R
 }
 
 func (h *TourGatewayHandler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
+	filename := r.URL.Path[len("/tours/uploads/"):] // izvuče samo ime fajla
 	filename := r.URL.Path[len("/tours/uploads/"):]
 	if filename == "" {
 		http.Error(w, "filename required", http.StatusBadRequest)
 		return
 	}
-
 	req := &imagepb.DownloadImageRequest{Filename: filename}
 	stream, err := h.ImageClient.DownloadImage(r.Context(), req)
 	if err != nil {
@@ -255,4 +263,38 @@ func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, e
 		ImageURL:    reqBody.ImageURL,
 		Order:       reqBody.Order,
 	}, nil
+}
+
+func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userId")
+	log.Println("🎯 [Gateway] GetPurchasedToursHandler called with userId:", userID)
+
+	if userID == "" {
+		http.Error(w, "userId is required", http.StatusBadRequest)
+		return
+	}
+
+	ordersResp, err := h.OrdersClient.GetPurchasedTours(r.Context(), &shopping_cart.GetPurchasedToursRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		log.Println("❌ Orders service error:", err)
+		http.Error(w, "failed to fetch purchased tours from Orders service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("✅ Orders returned tourIds:", ordersResp.TourIds)
+
+	var tours []*pb.TourResponse
+	for _, tourID := range ordersResp.TourIds {
+		tourResp, err := h.ToursClient.GetTourById(r.Context(), &pb.GetTourByIdRequest{Id: tourID})
+		if err != nil {
+			log.Println("⚠️ Failed to fetch tour details for", tourID, ":", err)
+			continue
+		}
+		tours = append(tours, tourResp)
+	}
+
+	log.Println("✅ Returning", len(tours), "tours to frontend")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tours)
 }

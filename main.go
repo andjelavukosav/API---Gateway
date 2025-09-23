@@ -8,14 +8,14 @@ import (
 	"os/signal"
 	"syscall"
 
+	// Proto paketi
 	blogpb "example/gateway/proto/blog"
 	imagepb "example/gateway/proto/image"
 	positionpb "example/gateway/proto/position"
+	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
+	stakeholderspb "example/gateway/proto/stakeholders"
+	tourspb "example/gateway/proto/tours"
 	reviewpb "example/gateway/proto/review"
-	"example/gateway/proto/stakeholders"
-	"example/gateway/proto/tours"
-	pb "example/gateway/proto/tours"
-
 	"example/gateway/config"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
@@ -39,6 +39,7 @@ func main() {
 		log.Fatalln("Failed to dial Stakeholders server:", err)
 	}
 	defer stakeholdersConn.Close()
+	stakeholdersClient := stakeholderspb.NewStakeholdersServiceClient(stakeholdersConn)
 
 	// -------- Tours gRPC connection --------
 	toursConn, err := grpc.DialContext(
@@ -50,33 +51,25 @@ func main() {
 		log.Fatalln("Failed to dial Tours server:", err)
 	}
 	defer toursConn.Close()
-
-	// Inicijalizacija gRPC klijenata
-	toursClient := pb.NewToursServiceClient(toursConn)
+	toursClient := tourspb.NewToursServiceClient(toursConn)
+	
 	toursImageClient := imagepb.NewImageServiceClient(toursConn)
 	reviewClient := reviewpb.NewReviewServiceClient(toursConn)
 
-	// PositionService gRPC client
+	// -------- Position gRPC connection --------
 	positionClient := positionpb.NewPositionServiceClient(toursConn)
 
-	// -------- gRPC-Gateway multiplexer --------
-	gwmux := runtime.NewServeMux()
-
-	// Register Stakeholders service
-	stakeholdersClient := stakeholders.NewStakeholdersServiceClient(stakeholdersConn)
-	if err := stakeholders.RegisterStakeholdersServiceHandlerClient(context.Background(), gwmux, stakeholdersClient); err != nil {
-		log.Fatalln("Failed to register Stakeholders gateway:", err)
+	// -------- Orders gRPC connection --------
+	ordersConn, err := grpc.DialContext(
+		context.Background(),
+		cfg.OrdersServiceAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial Orders server:", err)
 	}
-
-	// Register Tours service
-	if err := tours.RegisterToursServiceHandlerClient(context.Background(), gwmux, toursClient); err != nil {
-		log.Fatalln("Failed to register Tours gateway:", err)
-	}
-
-	// Register PositionService REST endpoint-a preko gRPC-Gateway
-	if err := positionpb.RegisterPositionServiceHandlerClient(context.Background(), gwmux, positionClient); err != nil {
-		log.Fatalln("Failed to register PositionService gateway:", err)
-	}
+	defer ordersConn.Close()
+	ordersClient := orderspb.NewOrdersServiceClient(ordersConn)
 
 	// Register Review service
 	if err := reviewpb.RegisterReviewServiceHandlerClient(context.Background(), gwmux, reviewClient); err != nil {
@@ -93,32 +86,46 @@ func main() {
 		log.Fatalln("Failed to dial BlogService:", err)
 	}
 	defer blogConn.Close()
-
-	// Blog REST preko gRPC client (sve rute osim multipart create)
 	blogClient := blogpb.NewBlogServiceClient(blogConn)
 	imageClient := imagepb.NewImageServiceClient(blogConn)
 
-	// Registracija Blog servisa (sve osim multipart create)
-	if err = blogpb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
-		log.Fatalln("Failed to register BlogService gateway:", err)
+	// -------- gRPC-Gateway multiplexer --------
+	gwmux := runtime.NewServeMux()
+
+	// Registracija servisa u gateway
+	if err := stakeholderspb.RegisterStakeholdersServiceHandlerClient(context.Background(), gwmux, stakeholdersClient); err != nil {
+		log.Fatalln("Failed to register Stakeholders gateway:", err)
+	}
+	if err := tourspb.RegisterToursServiceHandlerClient(context.Background(), gwmux, toursClient); err != nil {
+		log.Fatalln("Failed to register Tours gateway:", err)
+	}
+	if err := positionpb.RegisterPositionServiceHandlerClient(context.Background(), gwmux, positionClient); err != nil {
+		log.Fatalln("Failed to register Position gateway:", err)
+	}
+	if err := blogpb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
+		log.Fatalln("Failed to register Blog gateway:", err)
+	}
+	if err := orderspb.RegisterOrdersServiceHandlerClient(context.Background(), gwmux, ordersClient); err != nil { // 👈 Orders REST
+		log.Fatalln("Failed to register Orders gateway:", err)
+
 	}
 
-	// ----- REST handler za multipart POST (create blog) -----
+	// -------- Custom HTTP Handlers --------
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
+	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient, ordersClient)
 
-	// ---------------- Handler-i ----------------
-	// Tour handler - SAMO ZA TOUR METODE (bez reviewClient)
-	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient)
 
 	// Review handler - SAMO ZA REVIEW METODE
 	reviewHandler := handlers.NewReviewHandler(reviewClient, toursImageClient)
 
 	r := mux.NewRouter()
 
+
 	// ----------------- TOUR RUTE -----------------
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
+
 
 	// ----------------- REVIEW RUTE -----------------
 	r.HandleFunc("/tours/reviews", reviewHandler.CreateReviewHandler).Methods("POST")
@@ -136,10 +143,12 @@ func main() {
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
 	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
 
-	// gRPC Gateway fallback za ostale rute
+	r.HandleFunc("/tours/purchased", tourHandler.GetPurchasedToursHandler).Methods("GET")
+
+	// Fallback na gRPC-Gateway rute
 	r.PathPrefix("/").Handler(gwmux)
 
-	// Omotaj router u CORS middleware
+
 	handler := middleware.CORSMiddleware(r)
 
 	// -------- HTTP server --------

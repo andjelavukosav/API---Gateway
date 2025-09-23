@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+option go_package = "proto/shopping-cart";
+
+import "google/api/annotations.proto";
+
+// ----------------- SERVIS -----------------
+service OrdersService {
+  // Kreiranje nove narudžbine sa više tura
+  rpc CreateOrder(CreateOrderRequest) returns (CreateOrderResponse) {
+    option (google.api.http) = {
+      post: "/orders"
+      body: "*"
+    };
+  }
+
+   rpc GetPurchasedTours(GetPurchasedToursRequest) returns (GetPurchasedToursResponse) {
+    option (google.api.http) = {
+      get: "/orders/purchased-tours"
+    };
+  }
+}
+
+// ----------------- PORUKE -----------------
+
+// Poruka koja predstavlja turu u narudžbini
+message OrderTour {
+  string id = 1;
+  string name = 2;
+  double price = 3;
+}
+
+
+// Request za kreiranje narudžbine
+message CreateOrderRequest {
+  string userId = 1;
+  repeated OrderTour tours = 2;
+  double totalPrice = 3; // ukupna cena narudžbine
+}
+
+// Odgovor nakon kreiranja narudžbine
+message CreateOrderResponse {
+  bool success = 1;
+  string orderId = 2; // opciono, id nove narudžbine
+}
+
+// Request sadrži ID korisnika
+message GetPurchasedToursRequest {
+  string userId = 1;
+}
+
+// Response vraća listu ID-jeva tura
+message GetPurchasedToursResponse {
+  repeated string tourIds = 1;
+}
