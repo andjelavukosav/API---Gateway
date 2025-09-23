@@ -9,16 +9,16 @@ import (
 	"syscall"
 
 	// Proto paketi
-	blogpb "example/gateway/proto/blog"
-	imagepb "example/gateway/proto/image"
-	positionpb "example/gateway/proto/position"
-	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
-	stakeholderspb "example/gateway/proto/stakeholders"
-	tourspb "example/gateway/proto/tours"
-	reviewpb "example/gateway/proto/review"
 	"example/gateway/config"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
+	blogpb "example/gateway/proto/blog"
+	imagepb "example/gateway/proto/image"
+	positionpb "example/gateway/proto/position"
+	reviewpb "example/gateway/proto/review"
+	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
+	stakeholderspb "example/gateway/proto/stakeholders"
+	tourspb "example/gateway/proto/tours"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -52,7 +52,7 @@ func main() {
 	}
 	defer toursConn.Close()
 	toursClient := tourspb.NewToursServiceClient(toursConn)
-	
+
 	toursImageClient := imagepb.NewImageServiceClient(toursConn)
 	reviewClient := reviewpb.NewReviewServiceClient(toursConn)
 
@@ -70,11 +70,6 @@ func main() {
 	}
 	defer ordersConn.Close()
 	ordersClient := orderspb.NewOrdersServiceClient(ordersConn)
-
-	// Register Review service
-	if err := reviewpb.RegisterReviewServiceHandlerClient(context.Background(), gwmux, reviewClient); err != nil {
-		log.Fatalln("Failed to register ReviewService gateway:", err)
-	}
 
 	// -------- Blogs gRPC connection --------
 	blogConn, err := grpc.DialContext(
@@ -110,22 +105,23 @@ func main() {
 
 	}
 
+	// Register Review service
+	if err := reviewpb.RegisterReviewServiceHandlerClient(context.Background(), gwmux, reviewClient); err != nil {
+		log.Fatalln("Failed to register ReviewService gateway:", err)
+	}
 	// -------- Custom HTTP Handlers --------
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
 	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient, ordersClient)
-
 
 	// Review handler - SAMO ZA REVIEW METODE
 	reviewHandler := handlers.NewReviewHandler(reviewClient, toursImageClient)
 
 	r := mux.NewRouter()
 
-
 	// ----------------- TOUR RUTE -----------------
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
-
 
 	// ----------------- REVIEW RUTE -----------------
 	r.HandleFunc("/tours/reviews", reviewHandler.CreateReviewHandler).Methods("POST")
@@ -147,7 +143,6 @@ func main() {
 
 	// Fallback na gRPC-Gateway rute
 	r.PathPrefix("/").Handler(gwmux)
-
 
 	handler := middleware.CORSMiddleware(r)
 
