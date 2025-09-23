@@ -35,8 +35,9 @@ func NewTourGatewayHandler(
 	}
 }
 
+// ----------------- TOUR METODE (koriste pb i ToursClient) -----------------
+
 func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.Request) {
-	// 1️. Parsiranje multipart forme (max 10 MB)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Error parsing form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -48,37 +49,31 @@ func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// 4️. Preuzimanje ostalih polja iz forme i kreiranje KeyPoint
 	tourId := r.FormValue("tourId")
 	keyPoint, _ := parseKeyPointFromForm(r, imagePath)
 
-	// 5️. Kreiranje AddKeyPointRequest
 	req := &pb.AddKeyPointRequest{
 		TourId: tourId,
 		Point:  keyPoint,
 	}
 
-	// 6️. Poziv ToursService
 	tourResp, err := h.ToursClient.AddKeyPoint(r.Context(), req)
 	if err != nil {
 		http.Error(w, "Error adding key point: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// 7️. Odgovor frontendu
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tourResp)
 }
 
 func (h *TourGatewayHandler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
-	// očekujemo GET /tours/uploads/{filename}
 	filename := r.URL.Path[len("/tours/uploads/"):] // izvuče samo ime fajla
+	filename := r.URL.Path[len("/tours/uploads/"):]
 	if filename == "" {
 		http.Error(w, "filename required", http.StatusBadRequest)
 		return
 	}
-
-	// gRPC request ka Tours microservice
 	req := &imagepb.DownloadImageRequest{Filename: filename}
 	stream, err := h.ImageClient.DownloadImage(r.Context(), req)
 	if err != nil {
@@ -112,7 +107,6 @@ func (h *TourGatewayHandler) DownloadImageHandler(w http.ResponseWriter, r *http
 }
 
 func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *http.Request) {
-	// Preuzmi tourId iz putanje
 	vars := mux.Vars(r)
 	tourId := vars["tourId"]
 	if tourId == "" {
@@ -120,7 +114,6 @@ func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Parsiranje KeyPoint-a
 	var keyPoint *pb.KeyPoint
 	var err error
 
@@ -140,29 +133,28 @@ func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-	// Kreiranje UpdateKeyPointRequest, i pravljenje gRPC requesta
 	req := &pb.UpdateKeyPointRequest{
 		TourId:   tourId,
 		KeyPoint: keyPoint,
 	}
 
-	// Poziv gRPC servera
 	resp, err := h.ToursClient.UpdateKeyPoint(r.Context(), req)
 	if err != nil {
 		http.Error(w, "failed to update key point: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// Odgovor frontendu
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
 }
+
+// ----------------- POMOĆNE FUNKCIJE (ostaju iste) -----------------
 
 func (h *TourGatewayHandler) handleFileUpload(r *http.Request, fieldName string) (string, error) {
 	file, header, err := r.FormFile(fieldName)
 	if err != nil {
 		if err == http.ErrMissingFile {
-			return "", nil // fajl nije obavezan
+			return "", nil
 		}
 		return "", err
 	}
@@ -173,7 +165,6 @@ func (h *TourGatewayHandler) handleFileUpload(r *http.Request, fieldName string)
 		return "", err
 	}
 
-	// Pošalji info
 	if err := stream.Send(&imagepb.UploadImageRequest{
 		RequestData: &imagepb.UploadImageRequest_Info{
 			Info: &imagepb.ImageInfo{
@@ -246,7 +237,6 @@ func (h *TourGatewayHandler) ParseMultipartKeyPoint(r *http.Request) (*pb.KeyPoi
 	}
 
 	return parseKeyPointFromForm(r, imagePath)
-
 }
 
 func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, error) {

@@ -15,7 +15,7 @@ import (
 	orderspb "example/gateway/proto/shopping-cart" // 👈 Orders proto
 	stakeholderspb "example/gateway/proto/stakeholders"
 	tourspb "example/gateway/proto/tours"
-
+	reviewpb "example/gateway/proto/review"
 	"example/gateway/config"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
@@ -52,7 +52,9 @@ func main() {
 	}
 	defer toursConn.Close()
 	toursClient := tourspb.NewToursServiceClient(toursConn)
+	
 	toursImageClient := imagepb.NewImageServiceClient(toursConn)
+	reviewClient := reviewpb.NewReviewServiceClient(toursConn)
 
 	// -------- Position gRPC connection --------
 	positionClient := positionpb.NewPositionServiceClient(toursConn)
@@ -68,6 +70,11 @@ func main() {
 	}
 	defer ordersConn.Close()
 	ordersClient := orderspb.NewOrdersServiceClient(ordersConn)
+
+	// Register Review service
+	if err := reviewpb.RegisterReviewServiceHandlerClient(context.Background(), gwmux, reviewClient); err != nil {
+		log.Fatalln("Failed to register ReviewService gateway:", err)
+	}
 
 	// -------- Blogs gRPC connection --------
 	blogConn, err := grpc.DialContext(
@@ -100,20 +107,37 @@ func main() {
 	}
 	if err := orderspb.RegisterOrdersServiceHandlerClient(context.Background(), gwmux, ordersClient); err != nil { // 👈 Orders REST
 		log.Fatalln("Failed to register Orders gateway:", err)
+
 	}
 
 	// -------- Custom HTTP Handlers --------
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
 	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient, ordersClient)
 
+
+	// Review handler - SAMO ZA REVIEW METODE
+	reviewHandler := handlers.NewReviewHandler(reviewClient, toursImageClient)
+
 	r := mux.NewRouter()
 
-	// Tours custom endpoints
+
+	// ----------------- TOUR RUTE -----------------
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
 
-	// Blogs custom endpoints
+
+	// ----------------- REVIEW RUTE -----------------
+	r.HandleFunc("/tours/reviews", reviewHandler.CreateReviewHandler).Methods("POST")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.GetReviewHandler).Methods("GET")
+	r.HandleFunc("/tours/{tour_id}/reviews", reviewHandler.GetReviewsByTourHandler).Methods("GET")
+	r.HandleFunc("/tours/tourist/{tourist_id}/reviews", reviewHandler.GetReviewsByTouristHandler).Methods("GET")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.UpdateReviewHandler).Methods("PUT")
+	r.HandleFunc("/tours/reviews/{id}", reviewHandler.DeleteReviewHandler).Methods("DELETE")
+	r.HandleFunc("/tours/{tour_id}/average-rating", reviewHandler.GetAverageRatingHandler).Methods("GET")
+	r.PathPrefix("/reviews/uploads/").HandlerFunc(reviewHandler.DownloadReviewImageHandler).Methods("GET")
+
+	// ----------------- BLOG RUTE -----------------
 	r.HandleFunc("/blogs/create-blog", blogHandler.CreateBlogHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/blogs/user", blogHandler.GetUserBlogsHandler).Methods("GET", "OPTIONS")
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
@@ -124,7 +148,7 @@ func main() {
 	// Fallback na gRPC-Gateway rute
 	r.PathPrefix("/").Handler(gwmux)
 
-	// Omotaj u CORS middleware
+
 	handler := middleware.CORSMiddleware(r)
 
 	// -------- HTTP server --------
