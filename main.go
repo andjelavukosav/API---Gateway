@@ -9,15 +9,16 @@ import (
 	"syscall"
 
 	blogpb "example/gateway/proto/blog"
+	followerpb "example/gateway/proto/follower" // <-- generisani follower .pb fajlovi
 	imagepb "example/gateway/proto/image"
-	pb "example/gateway/proto/tours"
 	positionpb "example/gateway/proto/position"
+	pb "example/gateway/proto/tours"
 
 	"example/gateway/config"
-	"example/gateway/proto/stakeholders"
-	"example/gateway/proto/tours"
 	"example/gateway/handlers"
 	"example/gateway/middleware"
+	"example/gateway/proto/stakeholders"
+	"example/gateway/proto/tours"
 
 	"github.com/gorilla/mux"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
@@ -81,32 +82,50 @@ func main() {
 	// -------- Blogs gRPC connection --------
 	blogConn, err := grpc.DialContext(
 		context.Background(),
-		cfg.BlogServiceAddress, 
+		cfg.BlogServiceAddress,
 		//grpc.WithBlock(),
-    	grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
 	if err != nil {
 		log.Fatalln("Failed to dial BlogService:", err)
 	}
 	defer blogConn.Close()
 
+	followerConn, err := grpc.DialContext(
+		context.Background(),
+		cfg.FollowerServiceAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial Follower server:", err)
+	}
+	defer followerConn.Close()
+
+	followerClient := followerpb.NewFollowerServiceClient(followerConn)
+
 	// Blog REST preko gRPC client (sve rute osim multipart create)
 	blogClient := blogpb.NewBlogServiceClient(blogConn)
 	imageClient := imagepb.NewImageServiceClient(blogConn)
-	
+
 	// Registracija Blog servisa (sve osim multipart create)
 	if err = blogpb.RegisterBlogServiceHandlerClient(context.Background(), gwmux, blogClient); err != nil {
 		log.Fatalln("Failed to register BlogService gateway:", err)
 	}
 
+	if err := followerpb.RegisterFollowerServiceHandlerClient(
+		context.Background(), gwmux, followerClient,
+	); err != nil {
+		log.Fatalln("Failed to register Follower gateway:", err)
+	}
+
 	// ----- REST handler za multipart POST (create blog) -----
 	blogHandler := handlers.NewBlogGatewayHandler(blogClient, imageClient)
-	
+
 	// ---------------- Tour REST handler ----------------
 	tourHandler := handlers.NewTourGatewayHandler(toursClient, toursImageClient)
 
 	r := mux.NewRouter()
-	
+
 	r.HandleFunc("/tours/add-keypoint", tourHandler.AddKeyPointHandler).Methods("POST", "OPTIONS")
 	r.HandleFunc("/tours/tour/{tourId}/update-keypoint", tourHandler.UpdateKeyPointHandler).Methods("PUT", "OPTIONS")
 	r.PathPrefix("/tours/uploads/").HandlerFunc(tourHandler.DownloadImageHandler).Methods("GET")
@@ -116,10 +135,9 @@ func main() {
 	r.HandleFunc("/blogs/{blog_id}/comments", blogHandler.CreateCommentHandler).Methods("POST", "OPTIONS")
 	r.PathPrefix("/blogs/uploads/").HandlerFunc(blogHandler.DownloadImageHandler).Methods("GET")
 
-	
 	// gRPC Gateway fallback za ostale rute
 	r.PathPrefix("/").Handler(gwmux)
-	
+
 	// Omotaj router u CORS middleware
 	handler := middleware.CORSMiddleware(r)
 

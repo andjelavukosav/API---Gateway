@@ -843,6 +843,66 @@ func (x *CountLikesResponse) GetTotal() int64 {
 	return 0
 }
 
+type GetByFolloweeIdsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	FolloweeIds   []string               `protobuf:"bytes,1,rep,name=followee_ids,json=followeeIds,proto3" json:"followee_ids,omitempty"`
+	Skip          int32                  `protobuf:"varint,2,opt,name=skip,proto3" json:"skip,omitempty"`
+	Limit         int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetByFolloweeIdsRequest) Reset() {
+	*x = GetByFolloweeIdsRequest{}
+	mi := &file_blog_blog_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetByFolloweeIdsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetByFolloweeIdsRequest) ProtoMessage() {}
+
+func (x *GetByFolloweeIdsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_blog_blog_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetByFolloweeIdsRequest.ProtoReflect.Descriptor instead.
+func (*GetByFolloweeIdsRequest) Descriptor() ([]byte, []int) {
+	return file_blog_blog_service_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *GetByFolloweeIdsRequest) GetFolloweeIds() []string {
+	if x != nil {
+		return x.FolloweeIds
+	}
+	return nil
+}
+
+func (x *GetByFolloweeIdsRequest) GetSkip() int32 {
+	if x != nil {
+		return x.Skip
+	}
+	return 0
+}
+
+func (x *GetByFolloweeIdsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
 var File_blog_blog_service_proto protoreflect.FileDescriptor
 
 const file_blog_blog_service_proto_rawDesc = "" +
@@ -900,7 +960,11 @@ const file_blog_blog_service_proto_rawDesc = "" +
 	"\x11CountLikesRequest\x12\x17\n" +
 	"\ablog_id\x18\x01 \x01(\tR\x06blogId\"*\n" +
 	"\x12CountLikesResponse\x12\x14\n" +
-	"\x05total\x18\x01 \x01(\x03R\x05total2\xe7\x05\n" +
+	"\x05total\x18\x01 \x01(\x03R\x05total\"f\n" +
+	"\x17GetByFolloweeIdsRequest\x12!\n" +
+	"\ffollowee_ids\x18\x01 \x03(\tR\vfolloweeIds\x12\x12\n" +
+	"\x04skip\x18\x02 \x01(\x05R\x04skip\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit2\xd2\x06\n" +
 	"\vBlogService\x12N\n" +
 	"\n" +
 	"CreateBlog\x12\x12.CreateBlogRequest\x1a\r.BlogResponse\"\x1d\x82\xd3\xe4\x93\x02\x17:\x01*\"\x12/blogs/create-blog\x12M\n" +
@@ -912,7 +976,8 @@ const file_blog_blog_service_proto_rawDesc = "" +
 	"ToggleLike\x12\x12.ToggleLikeRequest\x1a\x13.ToggleLikeResponse\"(\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/blogs/{blog_id}/likes:toggle\x12^\n" +
 	"\fHasUserLiked\x12\x14.HasUserLikedRequest\x1a\x15.HasUserLikedResponse\"!\x82\xd3\xe4\x93\x02\x1b\x12\x19/blogs/{blog_id}/likes/me\x12[\n" +
 	"\n" +
-	"CountLikes\x12\x12.CountLikesRequest\x1a\x13.CountLikesResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/blogs/{blog_id}/likes/countB\fZ\n" +
+	"CountLikes\x12\x12.CountLikesRequest\x1a\x13.CountLikesResponse\"$\x82\xd3\xe4\x93\x02\x1e\x12\x1c/blogs/{blog_id}/likes/count\x12i\n" +
+	"\x13GetBlogsByFollowees\x12\x18.GetByFolloweeIdsRequest\x1a\x12.UserBlogsResponse\"$\x82\xd3\xe4\x93\x02\x1e:\x01*\"\x19/blogs/by-followees:queryB\fZ\n" +
 	"proto/blogb\x06proto3"
 
 var (
@@ -927,7 +992,7 @@ func file_blog_blog_service_proto_rawDescGZIP() []byte {
 	return file_blog_blog_service_proto_rawDescData
 }
 
-var file_blog_blog_service_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_blog_blog_service_proto_msgTypes = make([]protoimpl.MessageInfo, 16)
 var file_blog_blog_service_proto_goTypes = []any{
 	(*CreateBlogRequest)(nil),        // 0: CreateBlogRequest
 	(*BlogResponse)(nil),             // 1: BlogResponse
@@ -944,6 +1009,7 @@ var file_blog_blog_service_proto_goTypes = []any{
 	(*HasUserLikedResponse)(nil),     // 12: HasUserLikedResponse
 	(*CountLikesRequest)(nil),        // 13: CountLikesRequest
 	(*CountLikesResponse)(nil),       // 14: CountLikesResponse
+	(*GetByFolloweeIdsRequest)(nil),  // 15: GetByFolloweeIdsRequest
 }
 var file_blog_blog_service_proto_depIdxs = []int32{
 	1,  // 0: UserBlogsResponse.blogs:type_name -> BlogResponse
@@ -957,16 +1023,18 @@ var file_blog_blog_service_proto_depIdxs = []int32{
 	9,  // 8: BlogService.ToggleLike:input_type -> ToggleLikeRequest
 	11, // 9: BlogService.HasUserLiked:input_type -> HasUserLikedRequest
 	13, // 10: BlogService.CountLikes:input_type -> CountLikesRequest
-	1,  // 11: BlogService.CreateBlog:output_type -> BlogResponse
-	3,  // 12: BlogService.GetUserBlogs:output_type -> UserBlogsResponse
-	5,  // 13: BlogService.GetBlogDetails:output_type -> BlogWithCommentsResponse
-	7,  // 14: BlogService.CreateComment:output_type -> CommentResponse
-	7,  // 15: BlogService.UpdateComment:output_type -> CommentResponse
-	10, // 16: BlogService.ToggleLike:output_type -> ToggleLikeResponse
-	12, // 17: BlogService.HasUserLiked:output_type -> HasUserLikedResponse
-	14, // 18: BlogService.CountLikes:output_type -> CountLikesResponse
-	11, // [11:19] is the sub-list for method output_type
-	3,  // [3:11] is the sub-list for method input_type
+	15, // 11: BlogService.GetBlogsByFollowees:input_type -> GetByFolloweeIdsRequest
+	1,  // 12: BlogService.CreateBlog:output_type -> BlogResponse
+	3,  // 13: BlogService.GetUserBlogs:output_type -> UserBlogsResponse
+	5,  // 14: BlogService.GetBlogDetails:output_type -> BlogWithCommentsResponse
+	7,  // 15: BlogService.CreateComment:output_type -> CommentResponse
+	7,  // 16: BlogService.UpdateComment:output_type -> CommentResponse
+	10, // 17: BlogService.ToggleLike:output_type -> ToggleLikeResponse
+	12, // 18: BlogService.HasUserLiked:output_type -> HasUserLikedResponse
+	14, // 19: BlogService.CountLikes:output_type -> CountLikesResponse
+	3,  // 20: BlogService.GetBlogsByFollowees:output_type -> UserBlogsResponse
+	12, // [12:21] is the sub-list for method output_type
+	3,  // [3:12] is the sub-list for method input_type
 	3,  // [3:3] is the sub-list for extension type_name
 	3,  // [3:3] is the sub-list for extension extendee
 	0,  // [0:3] is the sub-list for field type_name
@@ -983,7 +1051,7 @@ func file_blog_blog_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_blog_blog_service_proto_rawDesc), len(file_blog_blog_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   15,
+			NumMessages:   16,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

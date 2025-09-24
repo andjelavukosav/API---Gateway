@@ -7,13 +7,15 @@ type Config struct {
 	StakeholdersServiceAddress string
 	ToursServiceAddress        string
 	BlogServiceAddress         string
+	FollowerServiceAddress     string
 }
 
 func GetConfig() Config {
 	return Config{
 		StakeholdersServiceAddress: os.Getenv("STAKEHOLDERS_SERVICE_ADDRESS"),
-		BlogServiceAddress:         os.Getenv("BLOG_SERVICE_ADDRESS"), 
+		BlogServiceAddress:         os.Getenv("BLOG_SERVICE_ADDRESS"),
 		Address:                    os.Getenv("GATEWAY_ADDRESS"),
 		ToursServiceAddress:        os.Getenv("TOURS_SERVICE_ADDRESS"),
+		FollowerServiceAddress:     os.Getenv("FOLLOWER_SERVICE_ADDRESS"),
 	}
 }

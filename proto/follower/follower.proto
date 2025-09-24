@@ -1,0 +1,62 @@
+syntax = "proto3";
+
+package follower;
+option go_package = "proto/follower";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+service FollowerService {
+  rpc Follow (FollowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/followers/{followee_id}:follow"
+      body: "*"   // ili izostavi body ako nećeš telo
+    };
+  }
+
+rpc Unfollow (UnfollowRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      delete: "/followers/{followee_id}"
+    };
+  }
+
+rpc GetRecommendations (GetRecommendationsRequest)
+      returns (GetRecommendationsResponse) {
+    option (google.api.http) = {
+      get: "/followers/recommendations"
+    };
+}
+
+rpc GetFollowees (GetFolloweesRequest) returns (GetFolloweesResponse) {
+    option (google.api.http) = {
+      get: "/followers/{user_id}/followees"
+    };
+  }
+
+}
+
+message FollowRequest {
+  string followee_id = 1; // iz path-a
+  string follower_id = 2; // gateway ubaci iz JWT-a (ne iz fronta)
+}
+
+message UnfollowRequest {
+  string followee_id = 1; // iz path-a
+  string follower_id = 2; // iz JWT-a
+}
+
+message GetRecommendationsRequest {
+  string user_id = 1; // gateway popuni iz JWT-a
+  int32  limit   = 2; // iz query-ja (?limit=)
+}
+message Recommendation { string user_id = 1; int64 mutual = 2; }
+message GetRecommendationsResponse { repeated Recommendation items = 1; }
+
+message GetFolloweesRequest {
+  string user_id = 1; // gateway može da ga popuni iz JWT-a
+  int32  skip    = 2; // iz query-ja
+  int32  limit   = 3; // iz query-ja
+}
+message GetFolloweesResponse {
+  repeated string user_ids = 1;
+}
