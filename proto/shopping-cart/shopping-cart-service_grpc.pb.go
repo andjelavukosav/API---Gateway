@@ -21,6 +21,10 @@ const _ = grpc.SupportPackageIsVersion7
 const (
 	OrdersService_CreateOrder_FullMethodName       = "/OrdersService/CreateOrder"
 	OrdersService_GetPurchasedTours_FullMethodName = "/OrdersService/GetPurchasedTours"
+	OrdersService_AddToCart_FullMethodName         = "/OrdersService/AddToCart"
+	OrdersService_GetCart_FullMethodName           = "/OrdersService/GetCart"
+	OrdersService_RemoveFromCart_FullMethodName    = "/OrdersService/RemoveFromCart"
+	OrdersService_ClearCart_FullMethodName         = "/OrdersService/ClearCart"
 )
 
 // OrdersServiceClient is the client API for OrdersService service.
@@ -30,6 +34,14 @@ type OrdersServiceClient interface {
 	// Kreiranje nove narudžbine sa više tura
 	CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*CreateOrderResponse, error)
 	GetPurchasedTours(ctx context.Context, in *GetPurchasedToursRequest, opts ...grpc.CallOption) (*GetPurchasedToursResponse, error)
+	// Dodaj turu u korpu
+	AddToCart(ctx context.Context, in *AddToCartRequest, opts ...grpc.CallOption) (*CartResponse, error)
+	// Vrati sve stavke korpe korisnika
+	GetCart(ctx context.Context, in *GetCartRequest, opts ...grpc.CallOption) (*CartResponse, error)
+	// Ukloni jednu stavku iz korpe
+	RemoveFromCart(ctx context.Context, in *RemoveFromCartRequest, opts ...grpc.CallOption) (*CartResponse, error)
+	// Očisti celu korpu
+	ClearCart(ctx context.Context, in *ClearCartRequest, opts ...grpc.CallOption) (*CartResponse, error)
 }
 
 type ordersServiceClient struct {
@@ -58,6 +70,42 @@ func (c *ordersServiceClient) GetPurchasedTours(ctx context.Context, in *GetPurc
 	return out, nil
 }
 
+func (c *ordersServiceClient) AddToCart(ctx context.Context, in *AddToCartRequest, opts ...grpc.CallOption) (*CartResponse, error) {
+	out := new(CartResponse)
+	err := c.cc.Invoke(ctx, OrdersService_AddToCart_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ordersServiceClient) GetCart(ctx context.Context, in *GetCartRequest, opts ...grpc.CallOption) (*CartResponse, error) {
+	out := new(CartResponse)
+	err := c.cc.Invoke(ctx, OrdersService_GetCart_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ordersServiceClient) RemoveFromCart(ctx context.Context, in *RemoveFromCartRequest, opts ...grpc.CallOption) (*CartResponse, error) {
+	out := new(CartResponse)
+	err := c.cc.Invoke(ctx, OrdersService_RemoveFromCart_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ordersServiceClient) ClearCart(ctx context.Context, in *ClearCartRequest, opts ...grpc.CallOption) (*CartResponse, error) {
+	out := new(CartResponse)
+	err := c.cc.Invoke(ctx, OrdersService_ClearCart_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // OrdersServiceServer is the server API for OrdersService service.
 // All implementations must embed UnimplementedOrdersServiceServer
 // for forward compatibility
@@ -65,6 +113,14 @@ type OrdersServiceServer interface {
 	// Kreiranje nove narudžbine sa više tura
 	CreateOrder(context.Context, *CreateOrderRequest) (*CreateOrderResponse, error)
 	GetPurchasedTours(context.Context, *GetPurchasedToursRequest) (*GetPurchasedToursResponse, error)
+	// Dodaj turu u korpu
+	AddToCart(context.Context, *AddToCartRequest) (*CartResponse, error)
+	// Vrati sve stavke korpe korisnika
+	GetCart(context.Context, *GetCartRequest) (*CartResponse, error)
+	// Ukloni jednu stavku iz korpe
+	RemoveFromCart(context.Context, *RemoveFromCartRequest) (*CartResponse, error)
+	// Očisti celu korpu
+	ClearCart(context.Context, *ClearCartRequest) (*CartResponse, error)
 	mustEmbedUnimplementedOrdersServiceServer()
 }
 
@@ -77,6 +133,18 @@ func (UnimplementedOrdersServiceServer) CreateOrder(context.Context, *CreateOrde
 }
 func (UnimplementedOrdersServiceServer) GetPurchasedTours(context.Context, *GetPurchasedToursRequest) (*GetPurchasedToursResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetPurchasedTours not implemented")
+}
+func (UnimplementedOrdersServiceServer) AddToCart(context.Context, *AddToCartRequest) (*CartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddToCart not implemented")
+}
+func (UnimplementedOrdersServiceServer) GetCart(context.Context, *GetCartRequest) (*CartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCart not implemented")
+}
+func (UnimplementedOrdersServiceServer) RemoveFromCart(context.Context, *RemoveFromCartRequest) (*CartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveFromCart not implemented")
+}
+func (UnimplementedOrdersServiceServer) ClearCart(context.Context, *ClearCartRequest) (*CartResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ClearCart not implemented")
 }
 func (UnimplementedOrdersServiceServer) mustEmbedUnimplementedOrdersServiceServer() {}
 
@@ -127,6 +195,78 @@ func _OrdersService_GetPurchasedTours_Handler(srv interface{}, ctx context.Conte
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OrdersService_AddToCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddToCartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrdersServiceServer).AddToCart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrdersService_AddToCart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrdersServiceServer).AddToCart(ctx, req.(*AddToCartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrdersService_GetCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrdersServiceServer).GetCart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrdersService_GetCart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrdersServiceServer).GetCart(ctx, req.(*GetCartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrdersService_RemoveFromCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveFromCartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrdersServiceServer).RemoveFromCart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrdersService_RemoveFromCart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrdersServiceServer).RemoveFromCart(ctx, req.(*RemoveFromCartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OrdersService_ClearCart_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ClearCartRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OrdersServiceServer).ClearCart(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OrdersService_ClearCart_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OrdersServiceServer).ClearCart(ctx, req.(*ClearCartRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // OrdersService_ServiceDesc is the grpc.ServiceDesc for OrdersService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -141,6 +281,22 @@ var OrdersService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetPurchasedTours",
 			Handler:    _OrdersService_GetPurchasedTours_Handler,
+		},
+		{
+			MethodName: "AddToCart",
+			Handler:    _OrdersService_AddToCart_Handler,
+		},
+		{
+			MethodName: "GetCart",
+			Handler:    _OrdersService_GetCart_Handler,
+		},
+		{
+			MethodName: "RemoveFromCart",
+			Handler:    _OrdersService_RemoveFromCart_Handler,
+		},
+		{
+			MethodName: "ClearCart",
+			Handler:    _OrdersService_ClearCart_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
