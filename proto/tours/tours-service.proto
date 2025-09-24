@@ -61,6 +61,47 @@ service ToursService {
         get: "/tours/all"
       };
     }
+  rpc StartTour(StartTourRequest) returns (StartTourResponse) {
+    option (google.api.http) = {
+      post: "/tours/start-tour"
+      body: "*"
+    };
+  }
+
+  rpc LeaveTour(LeaveTourRequest) returns (LeaveTourResponse) {
+    option (google.api.http) = {
+      post: "/tours/leave-tour"
+      body: "*"
+    };
+  }
+
+  // Obaveštavanje backend-a da je korisnik blizu ključne tačke
+  rpc NotifyNearKeyPoint(NotifyNearKeyPointRequest) returns (NotifyNearKeyPointResponse) {
+    option (google.api.http) = {
+      post: "/tours/{executionId}/keypoint/{keyPointId}/notify"
+      body: "*"
+    };
+  }
+
+  // Dobavljanje aktivne ture za datog turistu
+  rpc GetActiveTour(GetActiveTourRequest) returns (GetActiveTourResponse) {
+    option (google.api.http) = {
+      get: "/tours/active-tour/{touristId}"
+    };
+  }
+
+  rpc HasTourExecution(HasTourExecutionRequest) returns (HasTourExecutionResponse) {
+    option (google.api.http) = {
+      get: "/tours/{userId}/has-tour/{tourId}"
+    };
+  }
+
+  // RPC za proveru završetka ture
+  rpc CheckTourCompletion(CheckTourCompletionRequest) returns (CheckTourCompletionResponse) {
+    option (google.api.http) = {
+      get: "/tours/{execution_id}/check-completion"
+    };
+  }
 }
 
 // Zahtev je prazan
@@ -170,4 +211,69 @@ message GetAllToursRequest {}
 // Odgovor sadrži listu svih tura
 message GetAllToursResponse {
   repeated PublishedTour tours = 1;
+}
+
+message StartTourRequest {
+  string tourId = 1;
+  string userId = 2;
+}
+
+// Odgovor sadrži ID kreirane sesije i status
+message StartTourResponse {
+  string tourExecutionId = 1;
+  string status = 2; // ACTIVE
+}
+
+message LeaveTourRequest {
+  string tourExecutionId = 1;
+  string userId = 2;
+}
+
+message LeaveTourResponse {
+  string status = 1; // ABANDONED
+}
+
+message NotifyNearKeyPointRequest {
+  string executionId = 1;
+  string keyPointId = 2;
+  string userId = 3;
+}
+
+message NotifyNearKeyPointResponse {
+  bool success = 1;
+  string message = 2; // opcionalno, npr. "User notified successfully"
+}
+
+
+// Zahtev sadrži samo ID turiste
+message GetActiveTourRequest {
+  string touristId = 1;
+}
+
+// Odgovor vraća aktivnu turu, može biti prazan ako nema ACTIVE ture
+message GetActiveTourResponse {
+  string executionId = 1; // ID TourExecution objekta
+  string tourId = 2;      // ID ture
+  string status = 3;      // ACTIVE
+}
+
+
+// Provera da li korisnik ima aktivnu turu
+message HasTourExecutionRequest {
+  string userId = 1;
+  string tourId = 2;
+}
+
+message HasTourExecutionResponse {
+  bool hasExecution = 1;
+}
+
+// Request sadrži samo executionId
+message CheckTourCompletionRequest {
+  string execution_id = 1;
+}
+
+// Response vraća da li je tura završena
+message CheckTourCompletionResponse {
+  bool completed = 1;
 }
