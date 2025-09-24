@@ -8,6 +8,7 @@ type Config struct {
 	ToursServiceAddress        string
 	BlogServiceAddress         string
 	FollowerServiceAddress     string
+	OrdersServiceAddress       string
 }
 
 func GetConfig() Config {
@@ -17,5 +18,6 @@ func GetConfig() Config {
 		Address:                    os.Getenv("GATEWAY_ADDRESS"),
 		ToursServiceAddress:        os.Getenv("TOURS_SERVICE_ADDRESS"),
 		FollowerServiceAddress:     os.Getenv("FOLLOWER_SERVICE_ADDRESS"),
+		OrdersServiceAddress:       os.Getenv("SHOPPING_CART_SERVICE_ADDRESS"),
 	}
 }

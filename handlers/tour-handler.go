@@ -2,33 +2,42 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net/http"
 	"path/filepath"
-	"io"
 	"strconv"
 	"strings"
-	"fmt"
 
-	pb "example/gateway/proto/tours"
 	imagepb "example/gateway/proto/image"
+	shopping_cart "example/gateway/proto/shopping-cart"
+	pb "example/gateway/proto/tours"
 
 	"github.com/gorilla/mux"
 )
 
 type TourGatewayHandler struct {
-	ToursClient pb.ToursServiceClient
-	ImageClient imagepb.ImageServiceClient
+	ToursClient  pb.ToursServiceClient
+	ImageClient  imagepb.ImageServiceClient
+	OrdersClient shopping_cart.OrdersServiceClient
 }
 
-func NewTourGatewayHandler(toursClient pb.ToursServiceClient, imageClient imagepb.ImageServiceClient) *TourGatewayHandler {
+func NewTourGatewayHandler(
+	toursClient pb.ToursServiceClient,
+	imageClient imagepb.ImageServiceClient,
+	ordersClient shopping_cart.OrdersServiceClient,
+) *TourGatewayHandler {
 	return &TourGatewayHandler{
-		ToursClient: toursClient,
-		ImageClient: imageClient,
+		ToursClient:  toursClient,
+		ImageClient:  imageClient,
+		OrdersClient: ordersClient,
 	}
 }
 
+// ----------------- TOUR METODE (koriste pb i ToursClient) -----------------
+
 func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.Request) {
-	// 1️. Parsiranje multipart forme (max 10 MB)
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		http.Error(w, "Error parsing form: "+err.Error(), http.StatusBadRequest)
 		return
@@ -40,80 +49,70 @@ func (h *TourGatewayHandler) AddKeyPointHandler(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	// 4️. Preuzimanje ostalih polja iz forme i kreiranje KeyPoint
 	tourId := r.FormValue("tourId")
 	keyPoint, _ := parseKeyPointFromForm(r, imagePath)
 
-	// 5️. Kreiranje AddKeyPointRequest
 	req := &pb.AddKeyPointRequest{
 		TourId: tourId,
-		Point: keyPoint,
+		Point:  keyPoint,
 	}
 
-	// 6️. Poziv ToursService
 	tourResp, err := h.ToursClient.AddKeyPoint(r.Context(), req)
 	if err != nil {
 		http.Error(w, "Error adding key point: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	// 7️. Odgovor frontendu
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(tourResp)
 }
 
-
 func (h *TourGatewayHandler) DownloadImageHandler(w http.ResponseWriter, r *http.Request) {
-    // očekujemo GET /tours/uploads/{filename}
-    filename := r.URL.Path[len("/tours/uploads/"):] // izvuče samo ime fajla
-    if filename == "" {
-        http.Error(w, "filename required", http.StatusBadRequest)
-        return
-    }
-
-    // gRPC request ka Tours microservice
-    req := &imagepb.DownloadImageRequest{Filename: filename}
-    stream, err := h.ImageClient.DownloadImage(r.Context(), req)
-    if err != nil {
-        http.Error(w, "failed to start download: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
-
-    var contentType string
-
-    for {
-        resp, err := stream.Recv()
-        if err == io.EOF {
-            break
-        }
-        if err != nil {
-            http.Error(w, "download error: "+err.Error(), http.StatusInternalServerError)
-            return
-        }
-
-        if contentType == "" {
-            contentType = resp.ContentType
-            w.Header().Set("Content-Type", contentType)
-            w.Header().Set("Content-Disposition", "inline; filename=\""+filename+"\"")
-        }
-
-        _, err = w.Write(resp.ChunkData)
-        if err != nil {
-            return
-        }
-    }
-}
-
-func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *http.Request){
-	// Preuzmi tourId iz putanje
-	vars := mux.Vars(r)
-	tourId := vars["tourId"]
-	if tourId == ""{
-		http.Error(w, "tourId is required", http.StatusBadRequest)
-        return
+	filename := r.URL.Path[len("/tours/uploads/"):] // izvuče samo ime fajla
+	if filename == "" {
+		http.Error(w, "filename required", http.StatusBadRequest)
+		return
+	}
+	req := &imagepb.DownloadImageRequest{Filename: filename}
+	stream, err := h.ImageClient.DownloadImage(r.Context(), req)
+	if err != nil {
+		http.Error(w, "failed to start download: "+err.Error(), http.StatusInternalServerError)
+		return
 	}
 
-	// Parsiranje KeyPoint-a
+	var contentType string
+
+	for {
+		resp, err := stream.Recv()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			http.Error(w, "download error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		if contentType == "" {
+			contentType = resp.ContentType
+			w.Header().Set("Content-Type", contentType)
+			w.Header().Set("Content-Disposition", "inline; filename=\""+filename+"\"")
+		}
+
+		_, err = w.Write(resp.ChunkData)
+		if err != nil {
+			return
+		}
+	}
+}
+
+func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	tourId := vars["tourId"]
+	if tourId == "" {
+		http.Error(w, "tourId is required", http.StatusBadRequest)
+		return
+	}
+
 	var keyPoint *pb.KeyPoint
 	var err error
 
@@ -133,29 +132,28 @@ func (h *TourGatewayHandler) UpdateKeyPointHandler(w http.ResponseWriter, r *htt
 		return
 	}
 
-    // Kreiranje UpdateKeyPointRequest, i pravljenje gRPC requesta
-    req := &pb.UpdateKeyPointRequest{
-        TourId:   tourId,
-        KeyPoint: keyPoint,
-    }
+	req := &pb.UpdateKeyPointRequest{
+		TourId:   tourId,
+		KeyPoint: keyPoint,
+	}
 
-	// Poziv gRPC servera
-    resp, err := h.ToursClient.UpdateKeyPoint(r.Context(), req)
-    if err != nil {
-        http.Error(w, "failed to update key point: "+err.Error(), http.StatusInternalServerError)
-        return
-    }
+	resp, err := h.ToursClient.UpdateKeyPoint(r.Context(), req)
+	if err != nil {
+		http.Error(w, "failed to update key point: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-    // Odgovor frontendu
-    w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(resp)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(resp)
 }
+
+// ----------------- POMOĆNE FUNKCIJE (ostaju iste) -----------------
 
 func (h *TourGatewayHandler) handleFileUpload(r *http.Request, fieldName string) (string, error) {
 	file, header, err := r.FormFile(fieldName)
 	if err != nil {
 		if err == http.ErrMissingFile {
-			return "", nil // fajl nije obavezan
+			return "", nil
 		}
 		return "", err
 	}
@@ -166,7 +164,6 @@ func (h *TourGatewayHandler) handleFileUpload(r *http.Request, fieldName string)
 		return "", err
 	}
 
-	// Pošalji info
 	if err := stream.Send(&imagepb.UploadImageRequest{
 		RequestData: &imagepb.UploadImageRequest_Info{
 			Info: &imagepb.ImageInfo{
@@ -218,7 +215,7 @@ func parseKeyPointFromForm(r *http.Request, imageURL string) (*pb.KeyPoint, erro
 	lng, _ := strconv.ParseFloat(r.FormValue("longitude"), 64)
 
 	return &pb.KeyPoint{
-		Id:			 id,
+		Id:          id,
 		Name:        name,
 		Description: description,
 		Latitude:    lat,
@@ -239,7 +236,6 @@ func (h *TourGatewayHandler) ParseMultipartKeyPoint(r *http.Request) (*pb.KeyPoi
 	}
 
 	return parseKeyPointFromForm(r, imagePath)
-	
 }
 
 func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, error) {
@@ -266,4 +262,89 @@ func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, e
 		ImageURL:    reqBody.ImageURL,
 		Order:       reqBody.Order,
 	}, nil
+}
+
+/*func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userId")
+	log.Println("🎯 [Gateway] GetPurchasedToursHandler called with userId:", userID)
+
+	if userID == "" {
+		http.Error(w, "userId is required", http.StatusBadRequest)
+		return
+	}
+
+	ordersResp, err := h.OrdersClient.GetPurchasedTours(r.Context(), &shopping_cart.GetPurchasedToursRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		log.Println("❌ Orders service error:", err)
+		http.Error(w, "failed to fetch purchased tours from Orders service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("✅ Orders returned tourIds:", ordersResp.TourIds)
+
+	var tours []*pb.TourResponse
+	for _, tourID := range ordersResp.TourIds {
+		tourResp, err := h.ToursClient.GetTourById(r.Context(), &pb.GetTourByIdRequest{Id: tourID})
+		if err != nil {
+			log.Println("⚠️ Failed to fetch tour details for", tourID, ":", err)
+			continue
+		}
+		tours = append(tours, tourResp)
+	}
+
+	log.Println("✅ Returning", len(tours), "tours to frontend")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tours)
+}
+*/
+
+func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userId")
+	log.Println("🎯 [Gateway] GetPurchasedToursHandler called with userId:", userID)
+
+	if userID == "" {
+		http.Error(w, "userId is required", http.StatusBadRequest)
+		return
+	}
+
+	ordersResp, err := h.OrdersClient.GetPurchasedTours(r.Context(), &shopping_cart.GetPurchasedToursRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		log.Println("❌ Orders service error:", err)
+		http.Error(w, "failed to fetch purchased tours from Orders service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("✅ Orders returned tourIds:", ordersResp.TourIds)
+
+	var tours []*pb.TourResponse
+	for _, tourID := range ordersResp.TourIds {
+		// Proveri da li postoji bilo koja sesija za korisnika i ovu turu
+		hasExecResp, err := h.ToursClient.HasTourExecution(r.Context(), &pb.HasTourExecutionRequest{
+			UserId: userID,
+			TourId: tourID,
+		})
+		if err != nil {
+			log.Println("❌ Error calling HasTourExecution for tour", tourID, ":", err)
+			// obradi grešku, npr. continue ili return
+			continue
+		}
+
+		if hasExecResp.HasExecution {
+			log.Println("⏩ Skipping tour", tourID, "because user already has a session")
+			continue
+		}
+
+		tourResp, err := h.ToursClient.GetTourById(r.Context(), &pb.GetTourByIdRequest{Id: tourID})
+		if err != nil {
+			log.Println("⚠️ Failed to fetch tour details for", tourID, ":", err)
+			continue
+		}
+		tours = append(tours, tourResp)
+	}
+
+	log.Println("✅ Returning", len(tours), "tours to frontend")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tours)
 }
