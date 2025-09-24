@@ -63,6 +63,13 @@ service BlogService {
         };
     }
 
+      rpc GetBlogsByFollowees (GetByFolloweeIdsRequest) returns (UserBlogsResponse) {
+    option (google.api.http) = {
+      post: "/blogs/by-followees:query"
+      body: "*"
+    };
+  }
+
 }
 
 message CreateBlogRequest {
@@ -145,4 +152,10 @@ message CountLikesRequest {
 
 message CountLikesResponse {
   int64 total = 1;
+}
+
+message GetByFolloweeIdsRequest {
+  repeated string followee_ids = 1;
+  int32  skip  = 2;
+  int32  limit = 3;
 }

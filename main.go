@@ -13,6 +13,7 @@ import (
 	"example/gateway/handlers"
 	"example/gateway/middleware"
 	blogpb "example/gateway/proto/blog"
+	followerpb "example/gateway/proto/follower" // <-- generisani follower .pb fajlovi
 	imagepb "example/gateway/proto/image"
 	positionpb "example/gateway/proto/position"
 	reviewpb "example/gateway/proto/review"
@@ -81,8 +82,20 @@ func main() {
 		log.Fatalln("Failed to dial BlogService:", err)
 	}
 	defer blogConn.Close()
+
 	blogClient := blogpb.NewBlogServiceClient(blogConn)
 	imageClient := imagepb.NewImageServiceClient(blogConn)
+	followerConn, err := grpc.DialContext(
+		context.Background(),
+		cfg.FollowerServiceAddress,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Failed to dial Follower server:", err)
+	}
+	defer followerConn.Close()
+
+	followerClient := followerpb.NewFollowerServiceClient(followerConn)
 
 	// -------- gRPC-Gateway multiplexer --------
 	gwmux := runtime.NewServeMux()
@@ -103,6 +116,12 @@ func main() {
 	if err := orderspb.RegisterOrdersServiceHandlerClient(context.Background(), gwmux, ordersClient); err != nil { // 👈 Orders REST
 		log.Fatalln("Failed to register Orders gateway:", err)
 
+	}
+
+	if err := followerpb.RegisterFollowerServiceHandlerClient(
+		context.Background(), gwmux, followerClient,
+	); err != nil {
+		log.Fatalln("Failed to register Follower gateway:", err)
 	}
 
 	// Register Review service

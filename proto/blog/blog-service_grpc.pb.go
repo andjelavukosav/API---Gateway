@@ -19,14 +19,15 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	BlogService_CreateBlog_FullMethodName     = "/BlogService/CreateBlog"
-	BlogService_GetUserBlogs_FullMethodName   = "/BlogService/GetUserBlogs"
-	BlogService_GetBlogDetails_FullMethodName = "/BlogService/GetBlogDetails"
-	BlogService_CreateComment_FullMethodName  = "/BlogService/CreateComment"
-	BlogService_UpdateComment_FullMethodName  = "/BlogService/UpdateComment"
-	BlogService_ToggleLike_FullMethodName     = "/BlogService/ToggleLike"
-	BlogService_HasUserLiked_FullMethodName   = "/BlogService/HasUserLiked"
-	BlogService_CountLikes_FullMethodName     = "/BlogService/CountLikes"
+	BlogService_CreateBlog_FullMethodName          = "/BlogService/CreateBlog"
+	BlogService_GetUserBlogs_FullMethodName        = "/BlogService/GetUserBlogs"
+	BlogService_GetBlogDetails_FullMethodName      = "/BlogService/GetBlogDetails"
+	BlogService_CreateComment_FullMethodName       = "/BlogService/CreateComment"
+	BlogService_UpdateComment_FullMethodName       = "/BlogService/UpdateComment"
+	BlogService_ToggleLike_FullMethodName          = "/BlogService/ToggleLike"
+	BlogService_HasUserLiked_FullMethodName        = "/BlogService/HasUserLiked"
+	BlogService_CountLikes_FullMethodName          = "/BlogService/CountLikes"
+	BlogService_GetBlogsByFollowees_FullMethodName = "/BlogService/GetBlogsByFollowees"
 )
 
 // BlogServiceClient is the client API for BlogService service.
@@ -47,6 +48,7 @@ type BlogServiceClient interface {
 	HasUserLiked(ctx context.Context, in *HasUserLikedRequest, opts ...grpc.CallOption) (*HasUserLikedResponse, error)
 	// Ukupan broj lajkova
 	CountLikes(ctx context.Context, in *CountLikesRequest, opts ...grpc.CallOption) (*CountLikesResponse, error)
+	GetBlogsByFollowees(ctx context.Context, in *GetByFolloweeIdsRequest, opts ...grpc.CallOption) (*UserBlogsResponse, error)
 }
 
 type blogServiceClient struct {
@@ -137,6 +139,16 @@ func (c *blogServiceClient) CountLikes(ctx context.Context, in *CountLikesReques
 	return out, nil
 }
 
+func (c *blogServiceClient) GetBlogsByFollowees(ctx context.Context, in *GetByFolloweeIdsRequest, opts ...grpc.CallOption) (*UserBlogsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UserBlogsResponse)
+	err := c.cc.Invoke(ctx, BlogService_GetBlogsByFollowees_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // BlogServiceServer is the server API for BlogService service.
 // All implementations must embed UnimplementedBlogServiceServer
 // for forward compatibility.
@@ -155,6 +167,7 @@ type BlogServiceServer interface {
 	HasUserLiked(context.Context, *HasUserLikedRequest) (*HasUserLikedResponse, error)
 	// Ukupan broj lajkova
 	CountLikes(context.Context, *CountLikesRequest) (*CountLikesResponse, error)
+	GetBlogsByFollowees(context.Context, *GetByFolloweeIdsRequest) (*UserBlogsResponse, error)
 	mustEmbedUnimplementedBlogServiceServer()
 }
 
@@ -188,6 +201,9 @@ func (UnimplementedBlogServiceServer) HasUserLiked(context.Context, *HasUserLike
 }
 func (UnimplementedBlogServiceServer) CountLikes(context.Context, *CountLikesRequest) (*CountLikesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CountLikes not implemented")
+}
+func (UnimplementedBlogServiceServer) GetBlogsByFollowees(context.Context, *GetByFolloweeIdsRequest) (*UserBlogsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlogsByFollowees not implemented")
 }
 func (UnimplementedBlogServiceServer) mustEmbedUnimplementedBlogServiceServer() {}
 func (UnimplementedBlogServiceServer) testEmbeddedByValue()                     {}
@@ -354,6 +370,24 @@ func _BlogService_CountLikes_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _BlogService_GetBlogsByFollowees_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetByFolloweeIdsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(BlogServiceServer).GetBlogsByFollowees(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: BlogService_GetBlogsByFollowees_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(BlogServiceServer).GetBlogsByFollowees(ctx, req.(*GetByFolloweeIdsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // BlogService_ServiceDesc is the grpc.ServiceDesc for BlogService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -392,6 +426,10 @@ var BlogService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CountLikes",
 			Handler:    _BlogService_CountLikes_Handler,
+		},
+		{
+			MethodName: "GetBlogsByFollowees",
+			Handler:    _BlogService_GetBlogsByFollowees_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
