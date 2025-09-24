@@ -19,16 +19,20 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	ToursService_CreateTour_FullMethodName        = "/ToursService/CreateTour"
-	ToursService_GetAuthorTours_FullMethodName    = "/ToursService/GetAuthorTours"
-	ToursService_GetTourById_FullMethodName       = "/ToursService/GetTourById"
-	ToursService_AddKeyPoint_FullMethodName       = "/ToursService/AddKeyPoint"
-	ToursService_UpdateKeyPoint_FullMethodName    = "/ToursService/UpdateKeyPoint"
-	ToursService_DeleteKeyPoint_FullMethodName    = "/ToursService/DeleteKeyPoint"
-	ToursService_GetPublishedTours_FullMethodName = "/ToursService/GetPublishedTours"
-	ToursService_GetAllTours_FullMethodName       = "/ToursService/GetAllTours"
-	ToursService_StartTour_FullMethodName         = "/ToursService/StartTour"
-	ToursService_LeaveTour_FullMethodName         = "/ToursService/LeaveTour"
+	ToursService_CreateTour_FullMethodName          = "/ToursService/CreateTour"
+	ToursService_GetAuthorTours_FullMethodName      = "/ToursService/GetAuthorTours"
+	ToursService_GetTourById_FullMethodName         = "/ToursService/GetTourById"
+	ToursService_AddKeyPoint_FullMethodName         = "/ToursService/AddKeyPoint"
+	ToursService_UpdateKeyPoint_FullMethodName      = "/ToursService/UpdateKeyPoint"
+	ToursService_DeleteKeyPoint_FullMethodName      = "/ToursService/DeleteKeyPoint"
+	ToursService_GetPublishedTours_FullMethodName   = "/ToursService/GetPublishedTours"
+	ToursService_GetAllTours_FullMethodName         = "/ToursService/GetAllTours"
+	ToursService_StartTour_FullMethodName           = "/ToursService/StartTour"
+	ToursService_LeaveTour_FullMethodName           = "/ToursService/LeaveTour"
+	ToursService_NotifyNearKeyPoint_FullMethodName  = "/ToursService/NotifyNearKeyPoint"
+	ToursService_GetActiveTour_FullMethodName       = "/ToursService/GetActiveTour"
+	ToursService_HasTourExecution_FullMethodName    = "/ToursService/HasTourExecution"
+	ToursService_CheckTourCompletion_FullMethodName = "/ToursService/CheckTourCompletion"
 )
 
 // ToursServiceClient is the client API for ToursService service.
@@ -50,6 +54,13 @@ type ToursServiceClient interface {
 	GetAllTours(ctx context.Context, in *GetAllToursRequest, opts ...grpc.CallOption) (*GetAllToursResponse, error)
 	StartTour(ctx context.Context, in *StartTourRequest, opts ...grpc.CallOption) (*StartTourResponse, error)
 	LeaveTour(ctx context.Context, in *LeaveTourRequest, opts ...grpc.CallOption) (*LeaveTourResponse, error)
+	// Obaveštavanje backend-a da je korisnik blizu ključne tačke
+	NotifyNearKeyPoint(ctx context.Context, in *NotifyNearKeyPointRequest, opts ...grpc.CallOption) (*NotifyNearKeyPointResponse, error)
+	// Dobavljanje aktivne ture za datog turistu
+	GetActiveTour(ctx context.Context, in *GetActiveTourRequest, opts ...grpc.CallOption) (*GetActiveTourResponse, error)
+	HasTourExecution(ctx context.Context, in *HasTourExecutionRequest, opts ...grpc.CallOption) (*HasTourExecutionResponse, error)
+	// RPC za proveru završetka ture
+	CheckTourCompletion(ctx context.Context, in *CheckTourCompletionRequest, opts ...grpc.CallOption) (*CheckTourCompletionResponse, error)
 }
 
 type toursServiceClient struct {
@@ -150,6 +161,42 @@ func (c *toursServiceClient) LeaveTour(ctx context.Context, in *LeaveTourRequest
 	return out, nil
 }
 
+func (c *toursServiceClient) NotifyNearKeyPoint(ctx context.Context, in *NotifyNearKeyPointRequest, opts ...grpc.CallOption) (*NotifyNearKeyPointResponse, error) {
+	out := new(NotifyNearKeyPointResponse)
+	err := c.cc.Invoke(ctx, ToursService_NotifyNearKeyPoint_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *toursServiceClient) GetActiveTour(ctx context.Context, in *GetActiveTourRequest, opts ...grpc.CallOption) (*GetActiveTourResponse, error) {
+	out := new(GetActiveTourResponse)
+	err := c.cc.Invoke(ctx, ToursService_GetActiveTour_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *toursServiceClient) HasTourExecution(ctx context.Context, in *HasTourExecutionRequest, opts ...grpc.CallOption) (*HasTourExecutionResponse, error) {
+	out := new(HasTourExecutionResponse)
+	err := c.cc.Invoke(ctx, ToursService_HasTourExecution_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *toursServiceClient) CheckTourCompletion(ctx context.Context, in *CheckTourCompletionRequest, opts ...grpc.CallOption) (*CheckTourCompletionResponse, error) {
+	out := new(CheckTourCompletionResponse)
+	err := c.cc.Invoke(ctx, ToursService_CheckTourCompletion_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ToursServiceServer is the server API for ToursService service.
 // All implementations must embed UnimplementedToursServiceServer
 // for forward compatibility
@@ -169,6 +216,13 @@ type ToursServiceServer interface {
 	GetAllTours(context.Context, *GetAllToursRequest) (*GetAllToursResponse, error)
 	StartTour(context.Context, *StartTourRequest) (*StartTourResponse, error)
 	LeaveTour(context.Context, *LeaveTourRequest) (*LeaveTourResponse, error)
+	// Obaveštavanje backend-a da je korisnik blizu ključne tačke
+	NotifyNearKeyPoint(context.Context, *NotifyNearKeyPointRequest) (*NotifyNearKeyPointResponse, error)
+	// Dobavljanje aktivne ture za datog turistu
+	GetActiveTour(context.Context, *GetActiveTourRequest) (*GetActiveTourResponse, error)
+	HasTourExecution(context.Context, *HasTourExecutionRequest) (*HasTourExecutionResponse, error)
+	// RPC za proveru završetka ture
+	CheckTourCompletion(context.Context, *CheckTourCompletionRequest) (*CheckTourCompletionResponse, error)
 	mustEmbedUnimplementedToursServiceServer()
 }
 
@@ -205,6 +259,18 @@ func (UnimplementedToursServiceServer) StartTour(context.Context, *StartTourRequ
 }
 func (UnimplementedToursServiceServer) LeaveTour(context.Context, *LeaveTourRequest) (*LeaveTourResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method LeaveTour not implemented")
+}
+func (UnimplementedToursServiceServer) NotifyNearKeyPoint(context.Context, *NotifyNearKeyPointRequest) (*NotifyNearKeyPointResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method NotifyNearKeyPoint not implemented")
+}
+func (UnimplementedToursServiceServer) GetActiveTour(context.Context, *GetActiveTourRequest) (*GetActiveTourResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetActiveTour not implemented")
+}
+func (UnimplementedToursServiceServer) HasTourExecution(context.Context, *HasTourExecutionRequest) (*HasTourExecutionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HasTourExecution not implemented")
+}
+func (UnimplementedToursServiceServer) CheckTourCompletion(context.Context, *CheckTourCompletionRequest) (*CheckTourCompletionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckTourCompletion not implemented")
 }
 func (UnimplementedToursServiceServer) mustEmbedUnimplementedToursServiceServer() {}
 
@@ -399,6 +465,78 @@ func _ToursService_LeaveTour_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ToursService_NotifyNearKeyPoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(NotifyNearKeyPointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToursServiceServer).NotifyNearKeyPoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToursService_NotifyNearKeyPoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToursServiceServer).NotifyNearKeyPoint(ctx, req.(*NotifyNearKeyPointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ToursService_GetActiveTour_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetActiveTourRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToursServiceServer).GetActiveTour(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToursService_GetActiveTour_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToursServiceServer).GetActiveTour(ctx, req.(*GetActiveTourRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ToursService_HasTourExecution_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HasTourExecutionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToursServiceServer).HasTourExecution(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToursService_HasTourExecution_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToursServiceServer).HasTourExecution(ctx, req.(*HasTourExecutionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ToursService_CheckTourCompletion_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckTourCompletionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ToursServiceServer).CheckTourCompletion(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ToursService_CheckTourCompletion_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ToursServiceServer).CheckTourCompletion(ctx, req.(*CheckTourCompletionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ToursService_ServiceDesc is the grpc.ServiceDesc for ToursService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -445,6 +583,22 @@ var ToursService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "LeaveTour",
 			Handler:    _ToursService_LeaveTour_Handler,
+		},
+		{
+			MethodName: "NotifyNearKeyPoint",
+			Handler:    _ToursService_NotifyNearKeyPoint_Handler,
+		},
+		{
+			MethodName: "GetActiveTour",
+			Handler:    _ToursService_GetActiveTour_Handler,
+		},
+		{
+			MethodName: "HasTourExecution",
+			Handler:    _ToursService_HasTourExecution_Handler,
+		},
+		{
+			MethodName: "CheckTourCompletion",
+			Handler:    _ToursService_CheckTourCompletion_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

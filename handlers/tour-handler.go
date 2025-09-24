@@ -264,6 +264,41 @@ func (h *TourGatewayHandler) parseJSONKeyPoint(r *http.Request) (*pb.KeyPoint, e
 	}, nil
 }
 
+/*func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *http.Request) {
+	userID := r.URL.Query().Get("userId")
+	log.Println("🎯 [Gateway] GetPurchasedToursHandler called with userId:", userID)
+
+	if userID == "" {
+		http.Error(w, "userId is required", http.StatusBadRequest)
+		return
+	}
+
+	ordersResp, err := h.OrdersClient.GetPurchasedTours(r.Context(), &shopping_cart.GetPurchasedToursRequest{
+		UserId: userID,
+	})
+	if err != nil {
+		log.Println("❌ Orders service error:", err)
+		http.Error(w, "failed to fetch purchased tours from Orders service: "+err.Error(), http.StatusInternalServerError)
+		return
+	}
+	log.Println("✅ Orders returned tourIds:", ordersResp.TourIds)
+
+	var tours []*pb.TourResponse
+	for _, tourID := range ordersResp.TourIds {
+		tourResp, err := h.ToursClient.GetTourById(r.Context(), &pb.GetTourByIdRequest{Id: tourID})
+		if err != nil {
+			log.Println("⚠️ Failed to fetch tour details for", tourID, ":", err)
+			continue
+		}
+		tours = append(tours, tourResp)
+	}
+
+	log.Println("✅ Returning", len(tours), "tours to frontend")
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(tours)
+}
+*/
+
 func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *http.Request) {
 	userID := r.URL.Query().Get("userId")
 	log.Println("🎯 [Gateway] GetPurchasedToursHandler called with userId:", userID)
@@ -285,6 +320,22 @@ func (h *TourGatewayHandler) GetPurchasedToursHandler(w http.ResponseWriter, r *
 
 	var tours []*pb.TourResponse
 	for _, tourID := range ordersResp.TourIds {
+		// Proveri da li postoji bilo koja sesija za korisnika i ovu turu
+		hasExecResp, err := h.ToursClient.HasTourExecution(r.Context(), &pb.HasTourExecutionRequest{
+			UserId: userID,
+			TourId: tourID,
+		})
+		if err != nil {
+			log.Println("❌ Error calling HasTourExecution for tour", tourID, ":", err)
+			// obradi grešku, npr. continue ili return
+			continue
+		}
+
+		if hasExecResp.HasExecution {
+			log.Println("⏩ Skipping tour", tourID, "because user already has a session")
+			continue
+		}
+
 		tourResp, err := h.ToursClient.GetTourById(r.Context(), &pb.GetTourByIdRequest{Id: tourID})
 		if err != nil {
 			log.Println("⚠️ Failed to fetch tour details for", tourID, ":", err)
