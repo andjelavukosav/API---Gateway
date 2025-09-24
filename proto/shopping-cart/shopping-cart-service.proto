@@ -19,6 +19,35 @@ service OrdersService {
       get: "/orders/purchased-tours"
     };
   }
+
+   // Dodaj turu u korpu
+  rpc AddToCart(AddToCartRequest) returns (CartResponse) {
+    option (google.api.http) = {
+      post: "/cart/{userId}/items"
+      body: "tour"
+    };
+  }
+
+  // Vrati sve stavke korpe korisnika
+  rpc GetCart(GetCartRequest) returns (CartResponse) {
+    option (google.api.http) = {
+      get: "/cart/{userId}"
+    };
+  }
+
+  // Ukloni jednu stavku iz korpe
+  rpc RemoveFromCart(RemoveFromCartRequest) returns (CartResponse) {
+    option (google.api.http) = {
+      delete: "/cart/{userId}/items/{tourId}"
+    };
+  }
+
+  // Očisti celu korpu
+  rpc ClearCart(ClearCartRequest) returns (CartResponse) {
+    option (google.api.http) = {
+      delete: "/cart/{userId}/clear"
+    };
+  }
 }
 
 // ----------------- PORUKE -----------------
@@ -52,4 +81,39 @@ message GetPurchasedToursRequest {
 // Response vraća listu ID-jeva tura
 message GetPurchasedToursResponse {
   repeated string tourIds = 1;
+}
+
+// Tura koja može da stoji u korpi
+message CartTour {
+  string id = 1;
+  string name = 2;
+  double price = 3;
+}
+
+// Dodavanje u korpu
+message AddToCartRequest {
+  string userId = 1;
+  CartTour tour = 2;
+}
+
+// Uklanjanje iz korpe
+message RemoveFromCartRequest {
+  string userId = 1;
+  string tourId = 2;
+}
+
+// Učitavanje korpe
+message GetCartRequest {
+  string userId = 1;
+}
+
+// Čišćenje korpe
+message ClearCartRequest {
+  string userId = 1;
+}
+
+// Odgovor sa svim stavkama
+message CartResponse {
+  repeated CartTour items = 1;
+  double totalPrice = 2;
 }
